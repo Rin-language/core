@@ -13,5 +13,5 @@ const require = createRequire(import.meta.url);
 export function loadDocsAssets(): DocsAssets {
   const entry = require.resolve("@scalar/api-reference");
   const bundle = join(dirname(entry), "browser", "standalone.js");
-  return { script: readFileSync(bundle, "utf8") };
+  return { script: readFileSync(bundle) };
 }

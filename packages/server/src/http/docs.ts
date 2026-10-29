@@ -1,13 +1,14 @@
 import type { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { OPENAPI_ROUTE } from "../openapi/openapi-route.js";
+import { sharedBody } from "./shared-body.js";
 
 export const DOCS_PATH = "/docs";
 export const DOCS_SCRIPT_PATH = "/docs/scalar.js";
 
 /** What the page needs, handed in so the application never reads the disk itself. */
 export interface DocsAssets {
-  script: string;
+  script: Uint8Array;
 }
 
 // Turned off because each of them calls a Scalar server: fonts, telemetry and the agent.
@@ -78,8 +79,9 @@ export function mountDocs<Env extends { Variables: { route: string } }>(
   });
   app.get(DOCS_SCRIPT_PATH, (context) => {
     context.set("route", DOCS_SCRIPT_PATH);
-    return context.body(assets.script, 200, {
+    return context.body(sharedBody(assets.script), 200, {
       "Content-Type": "text/javascript; charset=utf-8",
+      "Content-Length": String(assets.script.byteLength),
     });
   });
 }

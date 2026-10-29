@@ -375,7 +375,7 @@ describe("request events: what is left out", () => {
     });
     const index = { body: Buffer.from("x"), contentType: "text/html" };
     const { app } = createTestApp({
-      docs: { script: "x" },
+      docs: { script: new Uint8Array() },
       web: new Map([["/", index]]),
       securityEvents: { publisher, trustedProxyHops: 0 },
     });

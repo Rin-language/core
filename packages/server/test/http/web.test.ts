@@ -49,6 +49,22 @@ describe("web client, when provided", () => {
     ]);
   });
 
+  it("serves the bytes it holds without copying them for each request", async () => {
+    const response = await webApp().app.request("/assets/app.js");
+
+    const chunk = await response.body?.getReader().read();
+
+    expect(chunk?.value).toBe(assets.get("/assets/app.js")?.body);
+  });
+
+  it("announces the exact size of what it serves", async () => {
+    const response = await webApp().app.request("/assets/app.js");
+
+    expect(response.headers.get("content-length")).toBe(
+      String(Buffer.byteLength("console.log(1)")),
+    );
+  });
+
   it("serves an asset with its content type", async () => {
     const response = await webApp().app.request("/assets/app.js");
 

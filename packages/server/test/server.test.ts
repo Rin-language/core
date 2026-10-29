@@ -96,6 +96,34 @@ describe("startServer", () => {
     expect(server.host).toBe("127.0.0.1");
   });
 
+  it("closes a connection that stops reading its answer", async () => {
+    const { server } = await start({
+      docs: { enabled: true },
+      timeouts: { headersMs: 1000, requestMs: 2000, idleMs: 300 },
+    });
+
+    const closedAfterMs = await new Promise<number>((resolve) => {
+      const startedAt = Date.now();
+      // Seen from the server: a client that stopped reading never sees the close.
+      server.http.once("connection", (serverSide) => {
+        serverSide.once("close", () => resolve(Date.now() - startedAt));
+      });
+      const socket = connect(server.port, server.host, () => {
+        socket.write("GET /docs/scalar.js HTTP/1.1\r\nHost: x\r\n\r\n");
+        socket.pause();
+      });
+      socket.on("error", () => undefined);
+    });
+
+    expect(closedAfterMs).toBeLessThan(3000);
+  });
+
+  it("applies the idle timeout of the configuration", async () => {
+    const { server } = await start();
+
+    expect(server.http.timeout).toBe(30000);
+  });
+
   it("applies the timeouts of the configuration", async () => {
     const { server } = await start();
 

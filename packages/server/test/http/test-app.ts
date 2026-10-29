@@ -6,6 +6,7 @@ import {
 import { FakeIdentity, FixedClock } from "@rin-language/core-test-kit";
 import pino from "pino";
 import { createApp } from "../../src/http/create-app.js";
+import type { DocsAssets } from "../../src/http/docs.js";
 import type { SecurityEventsOptions } from "../../src/http/request-events.js";
 import { defineRoute } from "../../src/http/route.js";
 import type { WebAssets } from "../../src/http/web.js";
@@ -33,7 +34,7 @@ export function createTestApp(
   options: {
     identity?: Identity;
     allowedOrigins?: readonly string[];
-    docs?: { script: string };
+    docs?: DocsAssets;
     web?: WebAssets;
     securityEvents?: SecurityEventsOptions;
   } = {},

@@ -10,6 +10,9 @@ services:
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-info}
     volumes:
       - rin-data:/var/lib/rin
+    # A ceiling, not a target: a leak or a flood cannot take the whole host.
+    mem_limit: 512m
+    pids_limit: 128
     read_only: true
     tmpfs:
       - /tmp

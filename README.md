@@ -64,7 +64,7 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `languages`, `defaultLanguage` | Languages this instance serves. Each needs a profile and an error types file, see [docs/language-data.md](docs/language-data.md). |
 | `limits` | Limits announced on `/v1/limits` and enforced by the server. |
 | `maxBodyBytes` | Largest request body accepted. |
-| `timeouts` | `headersMs` and `requestMs`, protection against slow requests. |
+| `timeouts` | `headersMs`, `requestMs` and `idleMs`: protection against slow requests and against clients that stop reading. A connection that moves no byte for `idleMs` is closed, so it must exceed the time your slowest route takes to start answering. |
 | `cors.allowedOrigins` | Exact origins allowed to read the API from a browser. Empty by default. No wildcard, no `null`, no credentials. |
 | `docs.enabled` | Serve the interactive documentation at `/docs`. Off by default, see [docs/interactive-docs.md](docs/interactive-docs.md). |
 | `securityEvents` | `trustedProxyHops` (proxies of yours in front of the server, 0 by default), `queueSize` (events held back while the receiver is slow) and `clientKinds` (how a User-Agent is reduced to a kind). See [docs/security-events.md](docs/security-events.md). |

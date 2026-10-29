@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
+import { sharedBody } from "./shared-body.js";
 
 export interface WebAsset {
   body: Buffer;
@@ -42,8 +43,9 @@ export function mountWeb<Env extends { Variables: { route: string } }>(
     const asset = assets.get(context.req.path);
     if (asset === undefined) return context.notFound();
     context.set("route", WEB_ROUTE);
-    return context.body(new Uint8Array(asset.body), 200, {
+    return context.body(sharedBody(asset.body), 200, {
       "Content-Type": asset.contentType,
+      "Content-Length": String(asset.body.byteLength),
     });
   });
 }

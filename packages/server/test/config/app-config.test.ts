@@ -137,6 +137,28 @@ describe("parseAppConfig", () => {
     expect(() => parseAppConfig(withoutLimits)).toThrow(ConfigError);
   });
 
+  it("closes a connection that stays silent after 30 seconds by default", () => {
+    expect(parseAppConfig(validConfig).timeouts.idleMs).toBe(30000);
+  });
+
+  it("reads the idle timeout", () => {
+    const config = parseAppConfig({
+      ...validConfig,
+      timeouts: { headersMs: 10000, requestMs: 30000, idleMs: 5000 },
+    });
+
+    expect(config.timeouts.idleMs).toBe(5000);
+  });
+
+  it.each([0, -1, 1.5, "30"])("rejects %j as an idle timeout", (idleMs) => {
+    expect(() =>
+      parseAppConfig({
+        ...validConfig,
+        timeouts: { headersMs: 10000, requestMs: 30000, idleMs },
+      }),
+    ).toThrow(ConfigError);
+  });
+
   it("rejects missing timeouts", () => {
     const { timeouts: _timeouts, ...withoutTimeouts } = validConfig;
 

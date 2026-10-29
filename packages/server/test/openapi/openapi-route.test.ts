@@ -96,7 +96,8 @@ describe("drift between the mounted routes and the document", () => {
       ignore,
     });
   };
-  const withDocs = () => createApp({ ...options, docs: { script: "" } });
+  const withDocs = () =>
+    createApp({ ...options, docs: { script: new Uint8Array() } });
 
   it("finds none in the core application", async () => {
     expect(await drift(app)).toEqual({ undocumented: [], unmounted: [] });

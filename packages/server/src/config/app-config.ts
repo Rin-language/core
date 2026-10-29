@@ -45,6 +45,10 @@ const AppConfigShape = z.strictObject({
     .strictObject({
       headersMs: z.number().int().positive(),
       requestMs: z.number().int().positive(),
+      // A connection that moves no byte for this long is closed, which frees
+      // what a client that never reads its answer would otherwise hold. It must
+      // exceed the time the slowest route takes to start answering.
+      idleMs: z.number().int().positive().default(30000),
     })
     // Node refuses a headers timeout longer than the whole-request timeout.
     .refine((timeouts) => timeouts.headersMs <= timeouts.requestMs, {

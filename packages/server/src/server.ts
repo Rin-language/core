@@ -118,6 +118,7 @@ export async function startServer(
   }
   http.headersTimeout = config.app.timeouts.headersMs;
   http.requestTimeout = config.app.timeouts.requestMs;
+  http.timeout = config.app.timeouts.idleMs;
 
   const address = http.address();
   if (address === null || typeof address === "string") {

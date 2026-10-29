@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createTestApp } from "./test-app.js";
 
 const SCRIPT = "/* fake scalar bundle */";
-const docsApp = () => createTestApp({ docs: { script: SCRIPT } });
+const SCRIPT_BYTES = new TextEncoder().encode(SCRIPT);
+const docsApp = () => createTestApp({ docs: { script: SCRIPT_BYTES } });
 
 const cspOf = async (path: string, app = docsApp().app) => {
   const response = await app.request(path);
@@ -78,6 +79,22 @@ describe("interactive documentation, when enabled", () => {
       response.headers.get("content-type"),
       await response.text(),
     ]).toEqual([200, "text/javascript; charset=utf-8", SCRIPT]);
+  });
+
+  it("serves the bytes it holds without copying them for each request", async () => {
+    const response = await docsApp().app.request("/docs/scalar.js");
+
+    const chunk = await response.body?.getReader().read();
+
+    expect(chunk?.value).toBe(SCRIPT_BYTES);
+  });
+
+  it("announces the exact size of the script", async () => {
+    const response = await docsApp().app.request("/docs/scalar.js");
+
+    expect(response.headers.get("content-length")).toBe(
+      String(SCRIPT_BYTES.byteLength),
+    );
   });
 
   it("answers GET only", async () => {

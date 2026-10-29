@@ -39,6 +39,14 @@ describe("compose.yaml", () => {
     expect(mounts.filter((mount) => /^[./~]/.test(mount))).toEqual([]);
   });
 
+  it("caps the memory the container may use", () => {
+    expect(compose).toMatch(/^\s*mem_limit:\s*\S+\s*$/m);
+  });
+
+  it("caps the number of processes", () => {
+    expect(compose).toMatch(/^\s*pids_limit:\s*\d+\s*$/m);
+  });
+
   it("checks the health of the server", () => {
     expect(compose).toMatch(/healthcheck:/);
   });
