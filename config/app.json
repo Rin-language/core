@@ -8,6 +8,7 @@
     "maxExplanationLength": 500
   },
   "maxBodyBytes": 65536,
+  "timeouts": { "headersMs": 10000, "requestMs": 30000 },
   "cors": { "allowedOrigins": [] },
   "docs": { "enabled": true }
 }

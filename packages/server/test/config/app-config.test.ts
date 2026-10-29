@@ -8,6 +8,7 @@ const validConfig = {
   defaultLanguage: "ja",
   limits: { maxTextLength: 2000, maxEdits: 100, maxExplanationLength: 500 },
   maxBodyBytes: 65536,
+  timeouts: { headersMs: 10000, requestMs: 30000 },
 };
 
 const withOrigins = (allowedOrigins: string[]) => ({
@@ -66,6 +67,21 @@ describe("parseAppConfig", () => {
     const { limits: _limits, ...withoutLimits } = validConfig;
 
     expect(() => parseAppConfig(withoutLimits)).toThrow(ConfigError);
+  });
+
+  it("rejects missing timeouts", () => {
+    const { timeouts: _timeouts, ...withoutTimeouts } = validConfig;
+
+    expect(() => parseAppConfig(withoutTimeouts)).toThrow(ConfigError);
+  });
+
+  it("rejects a non-positive timeout", () => {
+    expect(() =>
+      parseAppConfig({
+        ...validConfig,
+        timeouts: { headersMs: 0, requestMs: 30000 },
+      }),
+    ).toThrow(ConfigError);
   });
 
   it("rejects a non-positive body size limit", () => {

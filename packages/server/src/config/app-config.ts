@@ -32,6 +32,11 @@ const AppConfigShape = z.strictObject({
   defaultLanguage: LanguageCode,
   limits: LimitsResponse,
   maxBodyBytes: z.number().int().positive(),
+  // Slow-request protection: a client has this long to send its headers and its whole request.
+  timeouts: z.strictObject({
+    headersMs: z.number().int().positive(),
+    requestMs: z.number().int().positive(),
+  }),
   cors: z
     .strictObject({ allowedOrigins: z.array(AllowedOrigin) })
     .default({ allowedOrigins: [] }),

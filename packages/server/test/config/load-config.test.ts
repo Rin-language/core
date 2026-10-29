@@ -50,6 +50,7 @@ function writeFixture(fixture: Fixture = {}): string {
       defaultLanguage: "xx",
       limits: { maxTextLength: 10, maxEdits: 5, maxExplanationLength: 20 },
       maxBodyBytes: 1024,
+      timeouts: { headersMs: 1000, requestMs: 2000 },
     },
   );
   write(
@@ -115,6 +116,7 @@ describe("loadConfig", () => {
         defaultLanguage: "xx",
         limits: { maxTextLength: 10, maxEdits: 5, maxExplanationLength: 20 },
         maxBodyBytes: 1024,
+        timeouts: { headersMs: 1000, requestMs: 2000 },
       },
     });
 
@@ -146,6 +148,7 @@ describe("loadConfig", () => {
         defaultLanguage: "..",
         limits: { maxTextLength: 10, maxEdits: 5, maxExplanationLength: 20 },
         maxBodyBytes: 1024,
+        timeouts: { headersMs: 1000, requestMs: 2000 },
       },
     });
 
