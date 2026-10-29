@@ -26,6 +26,12 @@ pnpm dev                                  # server on http://127.0.0.1:3000
 pnpm --filter @rin-language/core-web dev  # client with hot reload, proxies the API to :3000
 ```
 
+The interactive documentation viewer (`@scalar/api-reference`) is an **optional dependency** of the server. Only the optional `/docs` page uses it, so it matters to contributors working on the API, not to someone running the server:
+
+- A plain `pnpm install` installs it. The production Docker image leaves it out (its `node_modules` goes from about 400 MB to 40 MB) unless you build with `APP_WITH_DOCS=true`.
+- Do not install with `--no-optional` to avoid it: the native binaries of Vite are optional dependencies too, so the web build breaks.
+- The tests that need the real viewer skip when it is missing, and a server started with `docs.enabled` but without it stops with a message that says what to do. See [docs/interactive-docs.md](docs/interactive-docs.md).
+
 To serve the built client from the server, as the Docker image does:
 
 ```sh

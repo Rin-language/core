@@ -9,11 +9,13 @@ The page is **off by default**.
 - The viewer is a large third-party package: its dependency tree adds hundreds of packages. That makes installs and Docker builds slower and widens the supply chain you have to trust.
 - It is a 5 MB script served by your own server, on the same origin as the web client, and it needs a looser content security policy than the rest (inline styles).
 
-Nothing exposed is open until you open it on purpose, so you choose to take on that weight.
+So the viewer is an optional dependency, and the production Docker image does not contain it unless you ask. Nothing exposed is open until you open it on purpose, so you choose to take on that weight.
 
 ## Turn it on
 
-In `config/app.json`:
+Two things are needed: the viewer must be installed, and the page must be enabled.
+
+**From source** (`pnpm install` already installed the viewer), in `config/app.json`:
 
 ```json
 "docs": { "enabled": true }
@@ -21,13 +23,13 @@ In `config/app.json`:
 
 Restart the server and open `http://127.0.0.1:3000/docs`.
 
-With Docker the configuration is baked into the image. Either edit `config/app.json` and rebuild:
+**With Docker**, build the image with the viewer, and enable the page in the configuration the image uses:
 
 ```sh
-docker compose up -d --build
+APP_WITH_DOCS=true docker compose up -d --build
 ```
 
-or keep your own copy of the folder and mount it read-only, in a `compose.override.yaml` next to `compose.yaml`:
+The configuration is baked into the image. Either set `"docs": { "enabled": true }` in `config/app.json` before building, or keep your own copy of the folder and mount it read-only, in a `compose.override.yaml` next to `compose.yaml`:
 
 ```yaml
 services:
@@ -35,6 +37,8 @@ services:
     volumes:
       - ./config:/app/config:ro
 ```
+
+If `docs.enabled` is true and the viewer is not installed, the server refuses to start and the message says so. With Docker's default restart policy it then restarts in a loop until you rebuild with `APP_WITH_DOCS=true` or switch the page off.
 
 ## What it serves
 

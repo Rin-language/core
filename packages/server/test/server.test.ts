@@ -20,6 +20,7 @@ import {
   type StartOptions,
   startServer,
 } from "../src/server.js";
+import { isScalarInstalled } from "./scalar-installed.js";
 
 const shippedConfigDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -96,27 +97,30 @@ describe("startServer", () => {
     expect(server.host).toBe("127.0.0.1");
   });
 
-  it("closes a connection that stops reading its answer", async () => {
-    const { server } = await start({
-      docs: { enabled: true },
-      timeouts: { headersMs: 1000, requestMs: 2000, idleMs: 300 },
-    });
-
-    const closedAfterMs = await new Promise<number>((resolve) => {
-      const startedAt = Date.now();
-      // Seen from the server: a client that stopped reading never sees the close.
-      server.http.once("connection", (serverSide) => {
-        serverSide.once("close", () => resolve(Date.now() - startedAt));
+  it.skipIf(!isScalarInstalled)(
+    "closes a connection that stops reading its answer",
+    async () => {
+      const { server } = await start({
+        docs: { enabled: true },
+        timeouts: { headersMs: 1000, requestMs: 2000, idleMs: 300 },
       });
-      const socket = connect(server.port, server.host, () => {
-        socket.write("GET /docs/scalar.js HTTP/1.1\r\nHost: x\r\n\r\n");
-        socket.pause();
-      });
-      socket.on("error", () => undefined);
-    });
 
-    expect(closedAfterMs).toBeLessThan(3000);
-  });
+      const closedAfterMs = await new Promise<number>((resolve) => {
+        const startedAt = Date.now();
+        // Seen from the server: a client that stopped reading never sees the close.
+        server.http.once("connection", (serverSide) => {
+          serverSide.once("close", () => resolve(Date.now() - startedAt));
+        });
+        const socket = connect(server.port, server.host, () => {
+          socket.write("GET /docs/scalar.js HTTP/1.1\r\nHost: x\r\n\r\n");
+          socket.pause();
+        });
+        socket.on("error", () => undefined);
+      });
+
+      expect(closedAfterMs).toBeLessThan(3000);
+    },
+  );
 
   it("applies the idle timeout of the configuration", async () => {
     const { server } = await start();
@@ -162,20 +166,23 @@ describe("startServer", () => {
     );
   });
 
-  it("serves the interactive documentation with its own viewer script when enabled", async () => {
-    const { url } = await start({ docs: { enabled: true } });
+  it.skipIf(!isScalarInstalled)(
+    "serves the interactive documentation with its own viewer script when enabled",
+    async () => {
+      const { url } = await start({ docs: { enabled: true } });
 
-    const [page, script] = await Promise.all([
-      fetch(`${url}/docs`),
-      fetch(`${url}/docs/scalar.js`),
-    ]);
+      const [page, script] = await Promise.all([
+        fetch(`${url}/docs`),
+        fetch(`${url}/docs/scalar.js`),
+      ]);
 
-    expect([
-      page.status,
-      script.status,
-      (await script.text()).length > 1000,
-    ]).toEqual([200, 200, true]);
-  });
+      expect([
+        page.status,
+        script.status,
+        (await script.text()).length > 1000,
+      ]).toEqual([200, 200, true]);
+    },
+  );
 
   it("does not serve the documentation with the shipped configuration", async () => {
     const { url } = await start();

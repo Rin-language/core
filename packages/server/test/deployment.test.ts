@@ -47,6 +47,10 @@ describe("compose.yaml", () => {
     expect(compose).toMatch(/^\s*pids_limit:\s*\d+\s*$/m);
   });
 
+  it("leaves the documentation viewer out of the image unless asked", () => {
+    expect(compose).toMatch(/WITH_DOCS:\s*\$\{APP_WITH_DOCS:-false\}/);
+  });
+
   it("checks the health of the server", () => {
     expect(compose).toMatch(/healthcheck:/);
   });
@@ -86,6 +90,20 @@ describe("Dockerfile", () => {
 
       expect(isPatched).toBe(true);
     });
+  });
+
+  it("builds without the optional documentation viewer by default", () => {
+    expect(dockerfile).toMatch(/^ARG WITH_DOCS=false$/m);
+  });
+
+  it("leaves the optional dependencies out of the production tree", () => {
+    expect(dockerfile).toMatch(/--prod --legacy \$OPTIONAL deploy/);
+  });
+
+  it("still installs them to build, since the web build needs the native binaries that are optional too", () => {
+    const install = dockerfile.match(/pnpm install[^\n]*/)?.[0] ?? "";
+
+    expect(install).not.toMatch(/--no-optional|\$OPTIONAL/);
   });
 
   it("starts the compiled server, not a development tool", () => {

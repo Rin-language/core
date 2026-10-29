@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 
 FROM node:24.22.2-bookworm-slim AS build
+# The interactive documentation viewer is an optional dependency with hundreds
+# of packages: the image leaves it out unless built with WITH_DOCS=true.
+ARG WITH_DOCS=false
 # better-sqlite3 is compiled here; the runtime image only gets the result.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
@@ -12,13 +15,16 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/server/package.json packages/server/
 COPY packages/test-kit/package.json packages/test-kit/
 COPY packages/web/package.json packages/web/
+# Everything is installed to build: the web build needs native binaries that
+# are optional dependencies too. Only the production tree drops the viewer.
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json ./
 COPY packages packages
-RUN pnpm --filter @rin-language/core-web build \
+RUN OPTIONAL=$([ "$WITH_DOCS" = "true" ] || echo "--no-optional") \
+  && pnpm --filter @rin-language/core-web build \
   && pnpm --filter @rin-language/core-server build \
-  && pnpm --filter @rin-language/core-server --prod --legacy deploy /out/server
+  && pnpm --filter @rin-language/core-server --prod --legacy $OPTIONAL deploy /out/server
 
 FROM node:24.22.2-bookworm-slim AS runtime
 ENV NODE_ENV=production \

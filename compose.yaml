@@ -1,6 +1,10 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        # true adds the optional interactive documentation viewer to the image.
+        WITH_DOCS: ${APP_WITH_DOCS:-false}
     image: rin-core:local
     restart: unless-stopped
     ports:

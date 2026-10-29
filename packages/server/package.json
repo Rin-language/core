@@ -19,10 +19,12 @@
   "dependencies": {
     "@hono/node-server": "2.1.5",
     "@rin-language/contract": "0.2.2",
-    "@scalar/api-reference": "1.76.0",
     "better-sqlite3": "13.0.3",
     "hono": "4.13.14",
     "pino": "10.4.0",
     "zod": "4.6.7"
+  },
+  "optionalDependencies": {
+    "@scalar/api-reference": "1.76.0"
   }
 }
