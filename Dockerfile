@@ -1,0 +1,56 @@
+# syntax=docker/dockerfile:1
+
+FROM node:24.22.2-bookworm-slim AS build
+# The interactive documentation viewer is an optional dependency with hundreds
+# of packages: the image leaves it out unless built with WITH_DOCS=true.
+ARG WITH_DOCS=false
+# better-sqlite3 is compiled here; the runtime image only gets the result.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+RUN corepack enable
+WORKDIR /repo
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/server/package.json packages/server/
+COPY packages/test-kit/package.json packages/test-kit/
+COPY packages/web/package.json packages/web/
+# Everything is installed to build: the web build needs native binaries that
+# are optional dependencies too. Only the production tree drops the viewer.
+RUN pnpm install --frozen-lockfile
+
+COPY tsconfig.json ./
+COPY packages packages
+RUN OPTIONAL=$([ "$WITH_DOCS" = "true" ] || echo "--no-optional") \
+  && pnpm --filter @rin-language/core-web build \
+  && pnpm --filter @rin-language/core-server build \
+  && pnpm --filter @rin-language/core-server --prod --legacy $OPTIONAL deploy /out/server
+
+FROM node:24.22.2-bookworm-slim AS runtime
+ENV NODE_ENV=production \
+  APP_HOST=0.0.0.0 \
+  APP_PORT=3000 \
+  APP_CONFIG_DIR=/app/config \
+  APP_DATABASE_PATH=/var/lib/rin/rin.sqlite \
+  APP_WEB_DIR=/app/web
+# The server only runs `node`. The package managers of the base image are not
+# needed to run it and carry their own dependencies, which scanners flag.
+RUN rm -rf \
+  /usr/local/lib/node_modules/npm \
+  /usr/local/lib/node_modules/corepack \
+  /usr/local/bin/npm \
+  /usr/local/bin/npx \
+  /usr/local/bin/corepack \
+  /usr/local/bin/yarn \
+  /usr/local/bin/yarnpkg \
+  /opt/yarn-v*
+WORKDIR /app
+COPY --from=build /out/server ./server
+COPY --from=build /repo/packages/web/dist ./web
+COPY config ./config
+COPY data ./data
+# The one place the server may write: the database.
+RUN mkdir -p /var/lib/rin && chown node:node /var/lib/rin
+USER node
+EXPOSE 3000
+CMD ["node", "server/dist/main.js"]

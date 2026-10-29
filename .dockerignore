@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/dist
+*.sqlite
+*.sqlite-*
+.env
+.env.*
+*.tgz
+docs

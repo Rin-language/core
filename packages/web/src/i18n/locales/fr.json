@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Immersion linguistique",
+    "language": "Langue de l’interface"
+  },
+  "loading": "Chargement…",
+  "overview": {
+    "health": "Serveur",
+    "healthOk": "En marche",
+    "limits": "Limites",
+    "maxTextLength": "Texte le plus long",
+    "maxEdits": "Maximum de corrections par texte",
+    "maxExplanationLength": "Explication la plus longue",
+    "languages": "Langues",
+    "levels": "Niveaux",
+    "skills": "Compétences",
+    "errorTypes": "Types d’erreur"
+  },
+  "skill": {
+    "reading": "Lecture",
+    "listening": "Écoute",
+    "writing": "Écriture",
+    "speaking": "Expression orale"
+  },
+  "errorType": {
+    "particles": "Particules",
+    "conjunctions_affixes": "Conjonctions et affixes",
+    "verb_conjugation_compounds": "Conjugaison des verbes et composés",
+    "giving_receiving": "Donner et recevoir",
+    "keigo_politeness": "Politesse et honorifiques",
+    "conditionals": "Conditionnels",
+    "obligation_permission_prohibition": "Obligation, permission, interdiction",
+    "desire_intent_plans": "Désir, intention, projets",
+    "conjecture_judgment_appearance": "Conjecture, jugement, apparence",
+    "comparison_degree_limitation": "Comparaison, degré, restriction",
+    "time_situation_aspect": "Temps, situation, aspect",
+    "reason_cause_concession": "Raison, cause, concession",
+    "orthography": "Orthographe",
+    "adjective_conjugation": "Conjugaison des adjectifs",
+    "word_order": "Ordre des mots",
+    "counters": "Compteurs",
+    "transitivity": "Transitivité",
+    "vocabulary_word_choice": "Vocabulaire et choix des mots",
+    "style_and_discourse": "Style et discours",
+    "punctuation": "Ponctuation",
+    "other": "Autre"
+  },
+  "error": {
+    "network_error": "Le serveur est injoignable.",
+    "invalid_response": "Le serveur a répondu d’une façon que l’application ne comprend pas.",
+    "rate_limited": "Trop de requêtes. Réessayez dans un instant.",
+    "internal_error": "Une erreur est survenue sur le serveur.",
+    "unknown": "Une erreur est survenue."
+  }
+}

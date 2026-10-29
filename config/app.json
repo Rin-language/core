@@ -1,0 +1,15 @@
+{
+  "dataDir": "../data",
+  "languages": ["ja"],
+  "defaultLanguage": "ja",
+  "limits": {
+    "maxTextLength": 2000,
+    "maxEdits": 100,
+    "maxExplanationLength": 500
+  },
+  "maxBodyBytes": 65536,
+  "timeouts": { "headersMs": 10000, "requestMs": 30000, "idleMs": 30000 },
+  "cors": { "allowedOrigins": [] },
+  "docs": { "enabled": false },
+  "securityEvents": { "trustedProxyHops": 0, "queueSize": 1000 }
+}

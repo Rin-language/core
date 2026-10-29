@@ -19,6 +19,7 @@ These rules apply to every change. If a rule gets in the way, say so and propose
 - Prefer pure functions and immutable data. Isolate side effects (network, disk, clock, randomness) at the edges.
 - Composition over inheritance.
 - Make illegal states unrepresentable with types.
+- API-first: the web client is a consumer of the public API like any other tool, with no private route. Every UI feature exists as a documented API, and every slice declares its routes in the route registry that generates the OpenAPI document.
 - Tunable values (prompts, rate limits, quotas, size limits, user preferences) live in config files validated at startup, never hardcoded. Only true invariants (e.g. milliseconds per day) are named constants in code.
 
 ## 3. Code style
@@ -56,6 +57,7 @@ These rules apply to every change. If a rule gets in the way, say so and propose
 - Least privilege everywhere: the LLM, the database user, the API tokens.
 - Minimal dependencies. Before adding one, check that it is maintained, widely used, and that the standard library cannot do the job. Pin versions.
 - Never trust the client: authorization, quotas, and validation are server-side only.
+- Security first: security is a design input of every slice, not a final pass. Each slice states its threats and abuse cases in its plan. Defaults are the safest ones, access is least-privilege, and everything exposed (API, tokens, webhooks, CORS, uploads, interactive docs) is closed by default, opened explicitly, and covered by a test.
 
 ## 7. Git and documentation
 

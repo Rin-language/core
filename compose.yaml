@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        # true adds the optional interactive documentation viewer to the image.
+        WITH_DOCS: ${APP_WITH_DOCS:-false}
+    image: rin-core:local
+    restart: unless-stopped
+    ports:
+      # Loopback only. Put a reverse proxy with TLS in front to expose it.
+      - "127.0.0.1:${APP_HOST_PORT:-3000}:3000"
+    environment:
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-info}
+    volumes:
+      - rin-data:/var/lib/rin
+    # A ceiling, not a target: a leak or a flood cannot take the whole host.
+    mem_limit: 512m
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(Number(!r.ok))).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  rin-data:
