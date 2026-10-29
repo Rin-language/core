@@ -1,0 +1,362 @@
+[
+  {
+    "grammar_point_id": "n5-wa-ga",
+    "pattern": "は / が",
+    "level": "N5",
+    "error_type": "particles"
+  },
+  {
+    "grammar_point_id": "n5-i-adj-past",
+    "pattern": "い形容詞 過去形",
+    "level": "N5",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n5-na-adj-past",
+    "pattern": "な形容詞 過去形",
+    "level": "N5",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n5-masu-past",
+    "pattern": "〜ました / 〜ませんでした",
+    "level": "N5",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n5-te-form-request",
+    "pattern": "〜てください",
+    "level": "N5",
+    "error_type": "obligation_permission_prohibition"
+  },
+  {
+    "grammar_point_id": "n5-tai",
+    "pattern": "〜たい",
+    "level": "N5",
+    "error_type": "desire_intent_plans"
+  },
+  {
+    "grammar_point_id": "n5-ni-de-place",
+    "pattern": "に / で",
+    "level": "N5",
+    "error_type": "particles"
+  },
+  {
+    "grammar_point_id": "n5-kara-reason",
+    "pattern": "〜から",
+    "level": "N5",
+    "error_type": "reason_cause_concession"
+  },
+  {
+    "grammar_point_id": "n5-te-iru",
+    "pattern": "〜ている",
+    "level": "N5",
+    "error_type": "time_situation_aspect"
+  },
+  {
+    "grammar_point_id": "n5-counter",
+    "pattern": "助数詞",
+    "level": "N5",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n5-mashou",
+    "pattern": "〜ましょう",
+    "level": "N5",
+    "error_type": "desire_intent_plans"
+  },
+  {
+    "grammar_point_id": "n5-nai-form",
+    "pattern": "〜ない",
+    "level": "N5",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n4-koto-ga-dekiru",
+    "pattern": "〜ことができる",
+    "level": "N4",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n4-te-form-connect",
+    "pattern": "〜て",
+    "level": "N4",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n4-potential",
+    "pattern": "可能形",
+    "level": "N4",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n4-passive",
+    "pattern": "受身形",
+    "level": "N4",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n4-causative",
+    "pattern": "使役形",
+    "level": "N4",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n4-tara",
+    "pattern": "〜たら",
+    "level": "N4",
+    "error_type": "conditionals"
+  },
+  {
+    "grammar_point_id": "n4-nara",
+    "pattern": "〜なら",
+    "level": "N4",
+    "error_type": "conditionals"
+  },
+  {
+    "grammar_point_id": "n4-sou-da-appearance",
+    "pattern": "〜そうだ",
+    "level": "N4",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n4-sou-da-hearsay",
+    "pattern": "〜そうだ",
+    "level": "N4",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n4-tame-ni",
+    "pattern": "〜ために",
+    "level": "N4",
+    "error_type": "reason_cause_concession"
+  },
+  {
+    "grammar_point_id": "n4-hou-ga-ii",
+    "pattern": "〜たほうがいい",
+    "level": "N4",
+    "error_type": "comparison_degree_limitation"
+  },
+  {
+    "grammar_point_id": "n4-te-shimau",
+    "pattern": "〜てしまう",
+    "level": "N4",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n3-you-ni-suru",
+    "pattern": "〜ようにする",
+    "level": "N3",
+    "error_type": "desire_intent_plans"
+  },
+  {
+    "grammar_point_id": "n3-you-ni-naru",
+    "pattern": "〜ようになる",
+    "level": "N3",
+    "error_type": "time_situation_aspect"
+  },
+  {
+    "grammar_point_id": "n3-koto-ni-suru",
+    "pattern": "〜ことにする",
+    "level": "N3",
+    "error_type": "desire_intent_plans"
+  },
+  {
+    "grammar_point_id": "n3-koto-ni-naru",
+    "pattern": "〜ことになる",
+    "level": "N3",
+    "error_type": "time_situation_aspect"
+  },
+  {
+    "grammar_point_id": "n3-wake-da",
+    "pattern": "〜わけだ",
+    "level": "N3",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n3-hazu-da",
+    "pattern": "〜はずだ",
+    "level": "N3",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n3-tokoro-da",
+    "pattern": "〜ところだ",
+    "level": "N3",
+    "error_type": "time_situation_aspect"
+  },
+  {
+    "grammar_point_id": "n3-ba-yokatta",
+    "pattern": "〜ばよかった",
+    "level": "N3",
+    "error_type": "conditionals"
+  },
+  {
+    "grammar_point_id": "n3-nagara",
+    "pattern": "〜ながら",
+    "level": "N3",
+    "error_type": "time_situation_aspect"
+  },
+  {
+    "grammar_point_id": "n3-ppoi",
+    "pattern": "〜っぽい",
+    "level": "N3",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n3-ageru-kureru-morau",
+    "pattern": "あげる / くれる / もらう",
+    "level": "N3",
+    "error_type": "giving_receiving"
+  },
+  {
+    "grammar_point_id": "n3-ni-yotte",
+    "pattern": "〜によって",
+    "level": "N3",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n2-ni-chigainai",
+    "pattern": "〜に違いない",
+    "level": "N2",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n2-ni-kanshite",
+    "pattern": "〜に関して",
+    "level": "N2",
+    "error_type": "particles"
+  },
+  {
+    "grammar_point_id": "n2-ni-oite",
+    "pattern": "〜において",
+    "level": "N2",
+    "error_type": "particles"
+  },
+  {
+    "grammar_point_id": "n2-wo-megutte",
+    "pattern": "〜をめぐって",
+    "level": "N2",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n2-ni-tsurete",
+    "pattern": "〜につれて",
+    "level": "N2",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n2-toshite",
+    "pattern": "〜として",
+    "level": "N2",
+    "error_type": "particles"
+  },
+  {
+    "grammar_point_id": "n2-kagiri",
+    "pattern": "〜限り",
+    "level": "N2",
+    "error_type": "comparison_degree_limitation"
+  },
+  {
+    "grammar_point_id": "n2-bakari-de-naku",
+    "pattern": "〜ばかりでなく",
+    "level": "N2",
+    "error_type": "comparison_degree_limitation"
+  },
+  {
+    "grammar_point_id": "n2-wake-ni-wa-ikanai",
+    "pattern": "〜わけにはいかない",
+    "level": "N2",
+    "error_type": "obligation_permission_prohibition"
+  },
+  {
+    "grammar_point_id": "n2-zaru-wo-enai",
+    "pattern": "〜ざるを得ない",
+    "level": "N2",
+    "error_type": "obligation_permission_prohibition"
+  },
+  {
+    "grammar_point_id": "n2-nai-koto-wa-nai",
+    "pattern": "〜ないことはない",
+    "level": "N2",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n2-nimo-kakawarazu",
+    "pattern": "〜にもかかわらず",
+    "level": "N2",
+    "error_type": "reason_cause_concession"
+  },
+  {
+    "grammar_point_id": "n1-wo-yoginaku-suru",
+    "pattern": "〜を余儀なくされる",
+    "level": "N1",
+    "error_type": "verb_conjugation_compounds"
+  },
+  {
+    "grammar_point_id": "n1-ni-hoka-naranai",
+    "pattern": "〜にほかならない",
+    "level": "N1",
+    "error_type": "conjecture_judgment_appearance"
+  },
+  {
+    "grammar_point_id": "n1-wo-motte",
+    "pattern": "〜をもって",
+    "level": "N1",
+    "error_type": "particles"
+  },
+  {
+    "grammar_point_id": "n1-ni-taete",
+    "pattern": "〜に堪えない",
+    "level": "N1",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n1-tomo-nareba",
+    "pattern": "〜ともなると",
+    "level": "N1",
+    "error_type": "conditionals"
+  },
+  {
+    "grammar_point_id": "n1-ga-hayai-ka",
+    "pattern": "〜が早いか",
+    "level": "N1",
+    "error_type": "time_situation_aspect"
+  },
+  {
+    "grammar_point_id": "n1-ni-ashite",
+    "pattern": "〜に至っては",
+    "level": "N1",
+    "error_type": "conjunctions_affixes"
+  },
+  {
+    "grammar_point_id": "n1-nari",
+    "pattern": "〜なり",
+    "level": "N1",
+    "error_type": "particles"
+  },
+  {
+    "grammar_point_id": "n1-to-wa-iu-mono-no",
+    "pattern": "〜とはいうものの",
+    "level": "N1",
+    "error_type": "reason_cause_concession"
+  },
+  {
+    "grammar_point_id": "n1-beku",
+    "pattern": "〜べく",
+    "level": "N1",
+    "error_type": "desire_intent_plans"
+  },
+  {
+    "grammar_point_id": "n1-majiki",
+    "pattern": "〜まじき",
+    "level": "N1",
+    "error_type": "obligation_permission_prohibition"
+  },
+  {
+    "grammar_point_id": "n1-kotogotoshi",
+    "pattern": "〜ごとし",
+    "level": "N1",
+    "error_type": "conjecture_judgment_appearance"
+  }
+]

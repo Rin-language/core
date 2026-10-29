@@ -1,0 +1,26 @@
+{
+  "default": "other",
+  "types": [
+    { "id": "particles", "description": "Wrong, missing or extra particle (は, が, を, に, で, ...)." },
+    { "id": "conjunctions_affixes", "description": "Conjunctions, prefixes, suffixes and connecting expressions." },
+    { "id": "verb_conjugation_compounds", "description": "Verb conjugation, auxiliary forms and compound verb patterns." },
+    { "id": "giving_receiving", "description": "Giving and receiving verbs and patterns (あげる, くれる, もらう, ...)." },
+    { "id": "keigo_politeness", "description": "Politeness level, honorific and humble language." },
+    { "id": "conditionals", "description": "Conditional forms (たら, ば, と, なら)." },
+    { "id": "obligation_permission_prohibition", "description": "Obligation, permission and prohibition patterns." },
+    { "id": "desire_intent_plans", "description": "Desire, intention, plans and volitional patterns." },
+    { "id": "conjecture_judgment_appearance", "description": "Conjecture, judgment, hearsay and appearance (らしい, そうだ, ようだ, ...)." },
+    { "id": "comparison_degree_limitation", "description": "Comparison, degree and limitation (より, ほど, だけ, しか, ...)." },
+    { "id": "time_situation_aspect", "description": "Time, situation and aspect (ている, てから, ところ, ...)." },
+    { "id": "reason_cause_concession", "description": "Reason, cause and concession (から, ので, のに, けれど, ...)." },
+    { "id": "orthography", "description": "Kanji, kana and spelling mistakes." },
+    { "id": "adjective_conjugation", "description": "Conjugation of i-adjectives and na-adjectives." },
+    { "id": "word_order", "description": "Word or phrase order within the sentence." },
+    { "id": "counters", "description": "Counters and number expressions." },
+    { "id": "transitivity", "description": "Transitive versus intransitive verb choice." },
+    { "id": "vocabulary_word_choice", "description": "Wrong or unnatural word choice." },
+    { "id": "style_and_discourse", "description": "Style, register and discourse flow." },
+    { "id": "punctuation", "description": "Punctuation and symbols." },
+    { "id": "other", "description": "Any error that fits no other type." }
+  ]
+}
