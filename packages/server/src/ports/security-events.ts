@@ -19,7 +19,9 @@ export type ClientKind = "browser" | "script" | "declared_bot" | "none";
 
 /**
  * What the server saw of one request, and nothing of what it carried: no body,
- * no query string, no header, no raw path, no address.
+ * no query string, no header, no raw path, no address. One is emitted per API
+ * request, once its response is ready, except for probes (`isProbe` routes),
+ * the documentation and the web client files.
  */
 export interface RequestEvent {
   type: "request";
@@ -30,12 +32,20 @@ export interface RequestEvent {
   route: string;
   status: number;
   durationMs: number;
+  /**
+   * Bytes of body the server read: 0 for a request whose body it did not read
+   * (a GET, a body refused as too large). Never the Content-Length header,
+   * which the client can lie in.
+   */
   requestBytes: number;
+  /** Bytes of the response body. */
   responseBytes: number;
   clientKind: ClientKind;
+  /** Absent for an anonymous request. */
   userId?: UserId;
   /** The `ApiError` code of a failed request. */
   errorCode?: ApiErrorCode;
+  /** Absent without a fingerprint key or without a readable address. */
   ipFingerprint?: IpFingerprint;
 }
 

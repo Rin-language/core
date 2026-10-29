@@ -43,7 +43,8 @@ const includesAny = (text: string, fragments: readonly string[]): boolean =>
  * Reduces a User-Agent to one of four coarse kinds, so the event carries the
  * signal ("a script, not a browser") without the string, which singles out a
  * person when combined with an address. The order matters: crawlers and
- * headless browsers also say "Mozilla/".
+ * headless browsers also say "Mozilla/". It is a hint, not proof: a script
+ * can write "Mozilla/" too.
  */
 export function classifyClient(
   userAgent: string | undefined,
