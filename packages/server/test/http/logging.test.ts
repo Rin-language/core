@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTestApp, createTestLogs, jsonPost } from "./test-app.js";
+import { createTestApp, jsonPost } from "./test-app.js";
 
 describe("request logs", () => {
   it("records the method, the route pattern and the status", async () => {

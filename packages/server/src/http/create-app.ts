@@ -3,6 +3,8 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { secureHeaders } from "hono/secure-headers";
 import type { Logger } from "pino";
+import { buildOpenApiDocument } from "../openapi/build-openapi-document.js";
+import { OPENAPI_ROUTE } from "../openapi/openapi-route.js";
 import type { Clock } from "../ports/clock.js";
 import type { Identity } from "../ports/identity.js";
 import { ApiProblem, STATUS_BY_CODE } from "./api-problem.js";
@@ -25,8 +27,10 @@ const JSON_CONTENT_TYPE = /^application\/json\s*(?:;|$)/i;
 const BEARER_CHALLENGE = { "WWW-Authenticate": "Bearer" };
 
 function assertNoDuplicates(routes: readonly Route[]): void {
-  const endpoints = new Set<string>();
-  const operationIds = new Set<string>();
+  const endpoints = new Set<string>([
+    `${OPENAPI_ROUTE.method} ${OPENAPI_ROUTE.path}`,
+  ]);
+  const operationIds = new Set<string>([OPENAPI_ROUTE.operationId]);
   for (const route of routes) {
     const endpoint = `${route.method} ${route.path}`;
     if (endpoints.has(endpoint)) {
@@ -151,6 +155,12 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
       );
     });
   }
+
+  const document = buildOpenApiDocument(routes);
+  app.get(OPENAPI_ROUTE.path, (context) => {
+    context.set("route", OPENAPI_ROUTE.path);
+    return context.json(document);
+  });
 
   app.notFound((context) =>
     problemResponse(
