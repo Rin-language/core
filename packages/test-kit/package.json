@@ -1,0 +1,13 @@
+{
+  "name": "@rin-language/core-test-kit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "devDependencies": {
+    "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@rin-language/core-server": "workspace:*"
+  }
+}

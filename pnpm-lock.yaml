@@ -29,6 +29,20 @@ importers:
       zod:
         specifier: 4.6.7
         version: 4.6.7
+    devDependencies:
+      '@rin-language/core-test-kit':
+        specifier: workspace:*
+        version: link:../test-kit
+
+  packages/test-kit:
+    dependencies:
+      '@rin-language/core-server':
+        specifier: workspace:*
+        version: link:../server
+    devDependencies:
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2))
 
 packages:
 
