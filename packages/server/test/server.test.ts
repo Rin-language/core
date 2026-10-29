@@ -6,6 +6,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -244,6 +245,37 @@ describe("startServer security events", () => {
     });
 
     expect(events[0]).toMatchObject({ clientKind: "browser" });
+  });
+
+  it("counts a body the client abandoned as a client error, not a crash", async () => {
+    const sink = new FakeSecurityEventSink();
+    const lines: string[] = [];
+    const { server } = await start(undefined, undefined, {
+      securityEventSink: sink,
+      logDestination: { write: (line: string) => void lines.push(line) },
+    });
+
+    await new Promise<void>((resolve) => {
+      const socket = connect(server.port, server.host, () => {
+        socket.write(
+          'POST /v1/echo HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n5\r\n{"tex\r\n',
+        );
+        setTimeout(() => {
+          socket.destroy();
+          resolve();
+        }, 50);
+      });
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await server.close();
+
+    const statuses = sink.events.flatMap((event) =>
+      event.type === "request" ? [event.status] : [],
+    );
+    expect([
+      statuses.includes(500),
+      lines.join("").includes("unhandled error"),
+    ]).toEqual([false, false]);
   });
 
   it("delivers the event of a real request to the receiver", async () => {

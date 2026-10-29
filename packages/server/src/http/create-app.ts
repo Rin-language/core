@@ -57,6 +57,21 @@ function assertNoDuplicates(routes: readonly Route[]): void {
   }
 }
 
+// What Node reports when the client drops the connection while its body is read.
+const ABANDONED_REQUEST_CODES: ReadonlySet<string> = new Set([
+  "ECONNRESET",
+  "ERR_STREAM_PREMATURE_CLOSE",
+]);
+
+function isAbandonedRequest(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const code = "code" in error ? error.code : undefined;
+  return (
+    error.message === "aborted" ||
+    (typeof code === "string" && ABANDONED_REQUEST_CODES.has(code))
+  );
+}
+
 function problemResponse(
   context: Context<AppEnv>,
   problem: ApiProblem,
@@ -224,6 +239,21 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
 
   app.onError((error, context) => {
     if (error instanceof ApiProblem) return problemResponse(context, error);
+    // The client's doing, not a failure of ours: anyone can cause it at will, so
+    // it must not read as a crash in the logs or in the 5xx a receiver counts.
+    if (isAbandonedRequest(error)) {
+      logger.debug(
+        { requestId: context.get("requestId") },
+        "the client abandoned its request",
+      );
+      return problemResponse(
+        context,
+        new ApiProblem(
+          "invalid_request",
+          "The request body could not be read.",
+        ),
+      );
+    }
     logger.error(
       { requestId: context.get("requestId"), err: error },
       "unhandled error",
