@@ -4,3 +4,6 @@ packages:
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - "@rin-language/*"
+# Only this package may run an install script (native SQLite binding).
+onlyBuiltDependencies:
+  - better-sqlite3

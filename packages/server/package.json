@@ -6,9 +6,11 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@rin-language/contract": "0.2.2",
+    "better-sqlite3": "13.0.3",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@rin-language/core-test-kit": "workspace:*"
+    "@rin-language/core-test-kit": "workspace:*",
+    "@types/better-sqlite3": "9.6.0"
   }
 }
