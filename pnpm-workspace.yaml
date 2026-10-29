@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+# Refuse versions published less than 3 days ago (supply-chain delay), except our own scope.
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - "@rin-language/*"
