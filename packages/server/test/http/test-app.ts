@@ -7,6 +7,7 @@ import { FakeIdentity, FixedClock } from "@rin-language/core-test-kit";
 import pino from "pino";
 import { createApp } from "../../src/http/create-app.js";
 import { defineRoute } from "../../src/http/route.js";
+import type { WebAssets } from "../../src/http/web.js";
 import type { Identity } from "../../src/ports/identity.js";
 
 export const MAX_BODY_BYTES = 1024;
@@ -32,6 +33,7 @@ export function createTestApp(
     identity?: Identity;
     allowedOrigins?: readonly string[];
     docs?: { script: string };
+    web?: WebAssets;
   } = {},
 ) {
   const logs = createTestLogs();
@@ -108,6 +110,7 @@ export function createTestApp(
       ? {}
       : { allowedOrigins: options.allowedOrigins }),
     ...(options.docs === undefined ? {} : { docs: options.docs }),
+    ...(options.web === undefined ? {} : { web: options.web }),
   });
   return { app, logs, captured, routes };
 }

@@ -47,7 +47,10 @@ function configWith(dir: string, overrides: Record<string, unknown>): string {
   return configDir;
 }
 
-async function start(appOverrides?: Record<string, unknown>) {
+async function start(
+  appOverrides?: Record<string, unknown>,
+  extraEnv: Record<string, string> = {},
+) {
   const dir = mkdtempSync(join(tmpdir(), "rin-server-"));
   temporaryDirs.push(dir);
   const databasePath = join(dir, "rin.sqlite");
@@ -59,6 +62,7 @@ async function start(appOverrides?: Record<string, unknown>) {
           : configWith(dir, appOverrides),
       APP_DATABASE_PATH: databasePath,
       APP_PORT: "0",
+      ...extraEnv,
     }),
     { logDestination: silent },
   );
@@ -146,6 +150,40 @@ describe("startServer", () => {
     ]);
 
     expect([page.status, script.status]).toEqual([404, 404]);
+  });
+
+  it("serves the web client from the folder it is given", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "rin-web-"));
+    temporaryDirs.push(dir);
+    writeFileSync(
+      join(dir, "index.html"),
+      "<!doctype html><title>client</title>",
+    );
+    const { url } = await start(undefined, { APP_WEB_DIR: dir });
+
+    const response = await fetch(`${url}/`);
+
+    expect([response.status, await response.text()]).toEqual([
+      200,
+      "<!doctype html><title>client</title>",
+    ]);
+  });
+
+  it("serves no web client when no folder is given", async () => {
+    const { url } = await start();
+
+    const response = await fetch(`${url}/`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("refuses to start when the web client folder is invalid", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "rin-web-"));
+    temporaryDirs.push(dir);
+
+    await expect(start(undefined, { APP_WEB_DIR: dir })).rejects.toThrow(
+      /index\.html/,
+    );
   });
 
   it("stops accepting connections once closed", async () => {

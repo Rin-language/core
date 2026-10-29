@@ -35,6 +35,13 @@ describe("parseEnv", () => {
     });
   });
 
+  it("serves no web client unless a folder is given", () => {
+    expect([
+      parseEnv({}).webDir,
+      parseEnv({ APP_WEB_DIR: "/srv/web" }).webDir,
+    ]).toEqual([undefined, "/srv/web"]);
+  });
+
   it("ignores variables that are not its own", () => {
     expect(() => parseEnv({ PATH: "/usr/bin", HOME: "/root" })).not.toThrow();
   });

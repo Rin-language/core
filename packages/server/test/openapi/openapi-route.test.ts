@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/config/load-config.js";
 import { createApp } from "../../src/http/create-app.js";
 import { DOCS_ENDPOINTS } from "../../src/http/docs.js";
+import { WEB_ENDPOINT } from "../../src/http/web.js";
 import { buildOpenApiDocument } from "../../src/openapi/build-openapi-document.js";
 import { buildCoreRoutes } from "../../src/routes/core-routes.js";
 import {
@@ -124,5 +125,15 @@ describe("drift between the mounted routes and the document", () => {
 
   it("reports the documentation routes when they are not declared", async () => {
     expect((await drift(withDocs())).undocumented).toEqual(DOCS_ENDPOINTS);
+  });
+
+  it("finds none once the web client route is declared as not part of the API", async () => {
+    const index = { body: Buffer.from("x"), contentType: "text/html" };
+    const withWeb = createApp({ ...options, web: new Map([["/", index]]) });
+
+    expect(await drift(withWeb, [WEB_ENDPOINT])).toEqual({
+      undocumented: [],
+      unmounted: [],
+    });
   });
 });

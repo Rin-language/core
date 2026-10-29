@@ -5,6 +5,7 @@ import type { Env } from "./config/env.js";
 import { loadConfig } from "./config/load-config.js";
 import { createApp } from "./http/create-app.js";
 import { loadDocsAssets } from "./http/docs-assets.js";
+import { loadWebAssets } from "./http/web-assets.js";
 import { NoIdentity } from "./identity/no-identity.js";
 import { createLogger } from "./observability/logger.js";
 import { buildCoreRoutes } from "./routes/core-routes.js";
@@ -28,6 +29,9 @@ export async function startServer(
 ): Promise<RunningServer> {
   const config = loadConfig(env.configDir);
   const logger = createLogger(options.logDestination, env.logLevel);
+  // Read before the database is opened, so a broken folder leaves nothing to close.
+  const docs = config.app.docs.enabled ? loadDocsAssets() : undefined;
+  const web = env.webDir === undefined ? undefined : loadWebAssets(env.webDir);
   const storage = createSqliteStorage({
     path: env.databasePath,
     clock: systemClock,
@@ -40,7 +44,8 @@ export async function startServer(
     logger,
     maxBodyBytes: config.app.maxBodyBytes,
     allowedOrigins: config.app.cors.allowedOrigins,
-    ...(config.app.docs.enabled ? { docs: loadDocsAssets() } : {}),
+    ...(docs === undefined ? {} : { docs }),
+    ...(web === undefined ? {} : { web }),
   });
 
   let http: Server;

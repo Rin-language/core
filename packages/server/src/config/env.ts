@@ -24,6 +24,8 @@ const EnvSchema = z
       .pipe(z.number().max(65535)),
     APP_DATABASE_PATH: z.string().min(1).default("rin.sqlite"),
     APP_LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
+    // The built web client. Absent means the server only exposes the API.
+    APP_WEB_DIR: z.string().min(1).optional(),
   })
   .transform((env) => ({
     configDir: env.APP_CONFIG_DIR,
@@ -31,6 +33,7 @@ const EnvSchema = z
     port: env.APP_PORT,
     databasePath: env.APP_DATABASE_PATH,
     logLevel: env.APP_LOG_LEVEL,
+    webDir: env.APP_WEB_DIR,
   }));
 
 export type Env = z.output<typeof EnvSchema>;

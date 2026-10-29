@@ -16,6 +16,7 @@ import {
   mountDocs,
 } from "./docs.js";
 import type { Route } from "./route.js";
+import { mountWeb, type WebAssets, webSecurityHeaders } from "./web.js";
 
 export interface AppOptions {
   routes: readonly Route[];
@@ -27,6 +28,8 @@ export interface AppOptions {
   allowedOrigins?: readonly string[];
   /** Absent means the interactive documentation is not served. */
   docs?: DocsAssets;
+  /** Absent means the web client is not served. */
+  web?: WebAssets;
 }
 
 interface AppEnv {
@@ -119,11 +122,14 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
     // TLS and HSTS belong to the reverse proxy that terminates it.
     strictTransportSecurity: false,
   });
-  app.use((context, next) =>
-    options.docs !== undefined && isDocsPath(context.req.path)
-      ? docsSecurityHeaders(context, next)
-      : apiSecurityHeaders(context, next),
-  );
+  app.use((context, next) => {
+    const path = context.req.path;
+    if (options.docs !== undefined && isDocsPath(path)) {
+      return docsSecurityHeaders(context, next);
+    }
+    if (options.web?.has(path)) return webSecurityHeaders(context, next);
+    return apiSecurityHeaders(context, next);
+  });
   app.use(async (context, next) => {
     context.header("Cache-Control", "no-store");
     await next();
@@ -189,6 +195,9 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
     context.set("route", OPENAPI_ROUTE.path);
     return context.json(document);
   });
+
+  // Last, so a path the client does not know still gets the API's JSON 404.
+  if (options.web !== undefined) mountWeb(app, options.web);
 
   app.notFound((context) =>
     problemResponse(
