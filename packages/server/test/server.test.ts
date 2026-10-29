@@ -1,4 +1,11 @@
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import {
+  cpSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,13 +29,34 @@ afterEach(async () => {
     rmSync(dir, { recursive: true, force: true });
 });
 
-async function start() {
+// A copy of the shipped configuration with the given app.json overrides.
+function configWith(dir: string, overrides: Record<string, unknown>): string {
+  const configDir = join(dir, "config");
+  cpSync(shippedConfigDir, configDir, { recursive: true });
+  const app = JSON.parse(
+    readFileSync(join(shippedConfigDir, "app.json"), "utf8"),
+  );
+  writeFileSync(
+    join(configDir, "app.json"),
+    JSON.stringify({
+      ...app,
+      dataDir: join(shippedConfigDir, app.dataDir),
+      ...overrides,
+    }),
+  );
+  return configDir;
+}
+
+async function start(appOverrides?: Record<string, unknown>) {
   const dir = mkdtempSync(join(tmpdir(), "rin-server-"));
   temporaryDirs.push(dir);
   const databasePath = join(dir, "rin.sqlite");
   const server = await startServer(
     parseEnv({
-      APP_CONFIG_DIR: shippedConfigDir,
+      APP_CONFIG_DIR:
+        appOverrides === undefined
+          ? shippedConfigDir
+          : configWith(dir, appOverrides),
       APP_DATABASE_PATH: databasePath,
       APP_PORT: "0",
     }),
@@ -68,6 +96,30 @@ describe("startServer", () => {
     const { databasePath } = await start();
 
     expect(statSync(databasePath).mode & 0o077).toBe(0);
+  });
+
+  it("sends no CORS header with the shipped configuration", async () => {
+    const { url } = await start();
+
+    const response = await fetch(`${url}/health`, {
+      headers: { origin: "https://app.example.com" },
+    });
+
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("allows the origins listed in the configuration", async () => {
+    const { url } = await start({
+      cors: { allowedOrigins: ["https://app.example.com"] },
+    });
+
+    const response = await fetch(`${url}/health`, {
+      headers: { origin: "https://app.example.com" },
+    });
+
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "https://app.example.com",
+    );
   });
 
   it("stops accepting connections once closed", async () => {

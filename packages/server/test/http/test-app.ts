@@ -27,7 +27,9 @@ export interface Captured {
   texts: string[];
 }
 
-export function createTestApp(options: { identity?: Identity } = {}) {
+export function createTestApp(
+  options: { identity?: Identity; allowedOrigins?: readonly string[] } = {},
+) {
   const logs = createTestLogs();
   const captured: Captured = { userIds: [], texts: [] };
   const routes = [
@@ -98,6 +100,9 @@ export function createTestApp(options: { identity?: Identity } = {}) {
     clock: new FixedClock("2026-10-29T10:00:00Z"),
     logger: logs.logger,
     maxBodyBytes: MAX_BODY_BYTES,
+    ...(options.allowedOrigins === undefined
+      ? {}
+      : { allowedOrigins: options.allowedOrigins }),
   });
   return { app, logs, captured, routes };
 }

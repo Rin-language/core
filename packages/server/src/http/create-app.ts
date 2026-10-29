@@ -8,6 +8,7 @@ import { OPENAPI_ROUTE } from "../openapi/openapi-route.js";
 import type { Clock } from "../ports/clock.js";
 import type { Identity } from "../ports/identity.js";
 import { ApiProblem, STATUS_BY_CODE } from "./api-problem.js";
+import { cors } from "./cors.js";
 import type { Route } from "./route.js";
 
 export interface AppOptions {
@@ -16,6 +17,8 @@ export interface AppOptions {
   clock: Clock;
   logger: Logger;
   maxBodyBytes: number;
+  /** Closed by default: no origin may read the API from a browser. */
+  allowedOrigins?: readonly string[];
 }
 
 interface AppEnv {
@@ -76,6 +79,7 @@ async function readJsonBody(context: Context<AppEnv>): Promise<unknown> {
 
 export function createApp(options: AppOptions): Hono<AppEnv> {
   const { routes, identity, clock, logger, maxBodyBytes } = options;
+  const allowedOrigins = options.allowedOrigins ?? [];
   assertNoDuplicates(routes);
   const app = new Hono<AppEnv>();
 
@@ -113,6 +117,17 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
     context.header("Cache-Control", "no-store");
     await next();
   });
+
+  app.use(
+    cors({
+      allowedOrigins,
+      allowedMethods: [
+        ...new Set(
+          [...routes, OPENAPI_ROUTE].map((route) => route.method.toUpperCase()),
+        ),
+      ],
+    }),
+  );
 
   app.use(
     bodyLimit({

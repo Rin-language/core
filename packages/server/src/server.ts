@@ -38,6 +38,7 @@ export async function startServer(
     clock: systemClock,
     logger,
     maxBodyBytes: config.app.maxBodyBytes,
+    allowedOrigins: config.app.cors.allowedOrigins,
   });
 
   let http: Server;
