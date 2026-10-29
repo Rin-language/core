@@ -1,12 +1,12 @@
 # Security events
 
-Core can tell a receiver what it saw of every API request, without telling it what the request carried. A receiver, such as the hosted offer, turns those events into fraud signals. Core only emits: it has no rules, no alerts and no blocking.
+Core can tell a receiver what it saw of every API request, without telling it what the request carried. A receiver that you provide can turn those events into fraud signals or alerts. Core only emits: it has no rules, no alerts and no blocking.
 
-> Status: slice 0. Only the HTTP-level event `request` and the gap marker `events_dropped` exist. Login attempts, AI calls and quotas will add their own event types in their slices, through the same interface.
+> Status: only the HTTP-level event `request` and the gap marker `events_dropped` exist. Other features will add their own event types through the same interface.
 
 ## Plug a receiver
 
-A receiver implements `SecurityEventSink` and is passed to `startServer`. Core never asks whether it runs hosted or self-hosted: the host program decides.
+A receiver implements `SecurityEventSink` and is passed to `startServer`. Core does not choose who receives the events: the program that starts it does.
 
 ```ts
 import { startServer, parseEnv, type SecurityEventSink } from "@rin-language/core-server";
@@ -20,7 +20,7 @@ const sink: SecurityEventSink = {
 await startServer(parseEnv(process.env), { securityEventSink: sink });
 ```
 
-Without a receiver nothing is measured, queued or built: a self-hosted server pays nothing for a feature it does not use.
+Without a receiver nothing is measured, queued or built: a server without a receiver pays nothing for a feature it does not use.
 
 `emit` may return a promise. It is called one event at a time, in order, in the background. It should not throw; if it does, the event counts as lost (see [Delivery](#delivery)).
 
@@ -125,7 +125,7 @@ Events never slow a request and never break one.
 - Closing the server delivers what is still queued and reports any gap before the database closes.
 - A failure while building or publishing an event is logged and never reaches the client.
 
-Limits to know: a receiver that never answers blocks the delivery task, so the queue fills and losses are counted; closing the server then waits for it. The rate limiting of slice 8 applies independently of events.
+Limits to know: a receiver that never answers blocks the delivery task, so the queue fills and losses are counted; closing the server then waits for it.
 
 ## Configuration
 
@@ -149,7 +149,3 @@ A key without a receiver only logs a warning at startup.
 ## Test it
 
 The test-kit has `FakeSecurityEventSink`, which records events, can be held shut with `hold()` and `release()`, and can be made to fail with `failNext()`.
-
-## Not in core
-
-The rules that turn events into alerts, the alert channels, the retention of events and any blocking of a fingerprint or an account belong to the receiver. Core gives the receiver what it needs: the same fingerprint for the same network under the same key, so a fingerprint can be blocked without ever storing an address.
