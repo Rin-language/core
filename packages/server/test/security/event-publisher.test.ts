@@ -145,6 +145,76 @@ describe("event publisher under load", () => {
   });
 });
 
+describe("event publisher overflow logs", () => {
+  const overflowWarnings = (lines: string[]) =>
+    lines.filter((line) => line.includes("security event queue is full"));
+
+  it("warns once when the queue overflows, not once per dropped event", async () => {
+    const { sink, logs, publisher } = setup(2);
+    sink.hold();
+
+    for (let n = 1; n <= 20; n++) publisher.publish(requestEvent(n));
+    await settle();
+    sink.release();
+    await publisher.close();
+
+    expect(overflowWarnings(logs.lines)).toHaveLength(1);
+  });
+
+  it("does not warn while the queue holds everything", async () => {
+    const { logs, publisher } = setup(10);
+
+    for (let n = 1; n <= 5; n++) publisher.publish(requestEvent(n));
+    await publisher.close();
+
+    expect(overflowWarnings(logs.lines)).toEqual([]);
+  });
+
+  it("says how many events were lost once the loss is reported", async () => {
+    const { sink, logs, publisher } = setup(2);
+    sink.hold();
+    for (let n = 1; n <= 6; n++) publisher.publish(requestEvent(n));
+    await settle();
+    sink.release();
+    await publisher.close();
+
+    const report = logs.lines
+      .map((line) => JSON.parse(line))
+      .find((entry) => entry.msg === "security events were dropped");
+    expect(report).toMatchObject({
+      count: 3,
+      since: requestEvent(4).occurredAt,
+    });
+  });
+
+  it("warns again for a later overflow", async () => {
+    const { sink, logs, publisher } = setup(1);
+    for (let round = 0; round < 2; round++) {
+      sink.hold();
+      for (let n = 1; n <= 4; n++) publisher.publish(requestEvent(n));
+      await settle();
+      sink.release();
+      await settle();
+    }
+    await publisher.close();
+
+    expect(overflowWarnings(logs.lines)).toHaveLength(2);
+  });
+
+  it("does not put the content of an event in these logs", async () => {
+    const { sink, logs, publisher } = setup(1);
+    sink.hold();
+    for (let n = 1; n <= 4; n++) {
+      publisher.publish({ ...requestEvent(n), route: "/secret-route-marker" });
+    }
+    await settle();
+    sink.release();
+    await publisher.close();
+
+    expect(logs.text()).not.toContain("secret-route-marker");
+  });
+});
+
 describe("event publisher when the receiver is down", () => {
   it("never makes the caller fail", async () => {
     const { sink, publisher } = setup();

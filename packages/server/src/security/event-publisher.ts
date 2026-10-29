@@ -44,6 +44,7 @@ export function createEventPublisher(
   let draining: Promise<void> | undefined;
   let isClosed = false;
   let isReceiverFailing = false;
+  let isOverflowing = false;
 
   const addLoss = (since: string, count = 1): void => {
     loss.count += count;
@@ -82,7 +83,15 @@ export function createEventPublisher(
       since: taken.since ?? clock.now().toISOString(),
     };
     // Kept for the next attempt when the receiver is still down.
-    if (!(await deliver(marker))) addLoss(marker.since, marker.count);
+    if (!(await deliver(marker))) {
+      addLoss(marker.since, marker.count);
+      return;
+    }
+    isOverflowing = false;
+    logger.info(
+      { count: marker.count, since: marker.since },
+      "security events were dropped",
+    );
   }
 
   async function drain(): Promise<void> {
@@ -107,8 +116,19 @@ export function createEventPublisher(
   return {
     publish(event) {
       if (isClosed) return;
-      if (queue.length >= queueSize) addLoss(event.occurredAt);
-      else queue.push(event);
+      if (queue.length >= queueSize) {
+        // Once per overflow, or a flood would turn into a flood of log lines.
+        if (!isOverflowing) {
+          logger.warn(
+            { queueSize },
+            "security event queue is full: new events are dropped until the receiver catches up",
+          );
+          isOverflowing = true;
+        }
+        addLoss(event.occurredAt);
+      } else {
+        queue.push(event);
+      }
       schedule();
     },
     async close() {
