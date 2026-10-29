@@ -5,9 +5,11 @@ export class ConfigError extends Error {
   constructor(
     readonly source: string,
     readonly problems: readonly string[],
+    options?: ErrorOptions,
   ) {
     super(
       `Invalid configuration in ${source}:\n${problems.map((problem) => `- ${problem}`).join("\n")}`,
+      options,
     );
     this.name = "ConfigError";
   }
