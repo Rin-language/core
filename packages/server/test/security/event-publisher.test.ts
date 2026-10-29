@@ -1,9 +1,6 @@
 import { FakeSecurityEventSink, FixedClock } from "@rin-language/core-test-kit";
 import { describe, expect, it } from "vitest";
-import type {
-  RequestEvent,
-  SecurityEvent,
-} from "../../src/ports/security-events.js";
+import type { RequestEvent } from "../../src/ports/security-events.js";
 import { createEventPublisher } from "../../src/security/event-publisher.js";
 import { createTestLogs } from "../http/test-app.js";
 

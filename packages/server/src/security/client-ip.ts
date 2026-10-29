@@ -40,11 +40,11 @@ const isBindings = (value: unknown): value is Bindings =>
 /** Reads the connection address Node gives Hono, which the Hono helper cannot do without a real socket. */
 export function remoteAddressOf(env: unknown): string | undefined {
   if (!isBindings(env)) return undefined;
-  const bindings = isBindings(env["server"]) ? env["server"] : env;
-  const incoming = bindings["incoming"];
+  const bindings = isBindings(env.server) ? env.server : env;
+  const incoming = bindings.incoming;
   if (!isBindings(incoming)) return undefined;
-  const socket = incoming["socket"];
+  const socket = incoming.socket;
   if (!isBindings(socket)) return undefined;
-  const address = socket["remoteAddress"];
+  const address = socket.remoteAddress;
   return typeof address === "string" ? address : undefined;
 }
