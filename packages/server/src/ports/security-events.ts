@@ -62,7 +62,7 @@ export type SecurityEvent = RequestEvent | EventsDroppedEvent;
 
 /**
  * Receives security events. Core only emits: the rules that turn events into
- * alerts belong to whoever implements this, such as the hosted offer.
+ * alerts belong to whoever implements this.
  */
 export interface SecurityEventSink {
   emit(event: SecurityEvent): void | Promise<void>;

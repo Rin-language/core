@@ -53,7 +53,8 @@ const AppConfigShape = z.strictObject({
   cors: z
     .strictObject({ allowedOrigins: z.array(AllowedOrigin) })
     .default({ allowedOrigins: [] }),
-  docs: z.strictObject({ enabled: z.boolean() }).default({ enabled: true }),
+  // Closed by default: the viewer is a large third-party bundle. See docs/interactive-docs.md.
+  docs: z.strictObject({ enabled: z.boolean() }).default({ enabled: false }),
   securityEvents: z
     .strictObject({
       // Proxies we run or trust in front of the server, such as a CDN and a PaaS

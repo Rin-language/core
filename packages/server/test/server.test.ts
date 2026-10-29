@@ -133,8 +133,8 @@ describe("startServer", () => {
     );
   });
 
-  it("serves the interactive documentation with its own viewer script", async () => {
-    const { url } = await start();
+  it("serves the interactive documentation with its own viewer script when enabled", async () => {
+    const { url } = await start({ docs: { enabled: true } });
 
     const [page, script] = await Promise.all([
       fetch(`${url}/docs`),
@@ -148,8 +148,8 @@ describe("startServer", () => {
     ]).toEqual([200, 200, true]);
   });
 
-  it("does not serve the documentation when the configuration disables it", async () => {
-    const { url } = await start({ docs: { enabled: false } });
+  it("does not serve the documentation with the shipped configuration", async () => {
+    const { url } = await start();
 
     const [page, script] = await Promise.all([
       fetch(`${url}/docs`),

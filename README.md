@@ -2,7 +2,7 @@
 
 Open-source core of a language immersion app, Japanese first. This repo holds the server, the web client and the shared logic. The schemas come from the separate [`contract`](https://www.npmjs.com/package/@rin-language/contract) package.
 
-Status: slice 0 (foundations). The server exposes `/health`, `/v1/limits`, `/v1/capabilities`, its OpenAPI document and an interactive documentation page, and serves a minimal web client. Correction, streak, reader and list come in the next slices.
+Status: slice 0 (foundations). The server exposes `/health`, `/v1/limits`, `/v1/capabilities`, its OpenAPI document and, if you turn it on, an interactive documentation page, and serves a minimal web client. Correction, streak, reader and list come in the next slices.
 
 ## Run it with Docker
 
@@ -10,7 +10,7 @@ Status: slice 0 (foundations). The server exposes `/health`, `/v1/limits`, `/v1/
 docker compose up -d --build
 ```
 
-Then open <http://127.0.0.1:3000> (the client) or <http://127.0.0.1:3000/docs> (the API documentation).
+Then open <http://127.0.0.1:3000> (the client). The OpenAPI document is at <http://127.0.0.1:3000/v1/openapi.json>; the interactive documentation page is off unless you [turn it on](docs/interactive-docs.md).
 
 - The port is published on `127.0.0.1` only. To expose the server, put a reverse proxy with TLS in front of it. Set `APP_HOST_PORT` to use another host port.
 - The container runs as an unprivileged user, with a read-only root filesystem, no Linux capabilities and `no-new-privileges`. The only writable place is the `rin-data` volume, which holds the SQLite database.
@@ -66,7 +66,7 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `maxBodyBytes` | Largest request body accepted. |
 | `timeouts` | `headersMs` and `requestMs`, protection against slow requests. |
 | `cors.allowedOrigins` | Exact origins allowed to read the API from a browser. Empty by default. No wildcard, no `null`, no credentials. |
-| `docs.enabled` | Serve `/docs`. On by default. |
+| `docs.enabled` | Serve the interactive documentation at `/docs`. Off by default, see [docs/interactive-docs.md](docs/interactive-docs.md). |
 | `securityEvents` | `trustedProxyHops` (proxies of yours in front of the server, 0 by default), `queueSize` (events held back while the receiver is slow) and `clientKinds` (how a User-Agent is reduced to a kind). See [docs/security-events.md](docs/security-events.md). |
 
 An invalid file stops the server at startup with a message naming the file and the rule.
@@ -81,7 +81,7 @@ Every route is declared once in a registry that mounts it and generates the Open
 | `GET /v1/limits` | Limits the server enforces. |
 | `GET /v1/capabilities` | Languages, levels, skills and error types on offer. |
 | `GET /v1/openapi.json` | The OpenAPI document of this server. |
-| `GET /docs` | Interactive documentation (Scalar), served locally with no CDN. |
+| `GET /docs` | Interactive documentation (Scalar), served locally with no CDN. Off by default. |
 
 Errors use the contract's `ApiError` format. They never contain user content or internal detail.
 
@@ -89,7 +89,7 @@ Errors use the contract's `ApiError` format. They never contain user content or 
 
 Everything exposed is closed until it is opened on purpose, and each default is covered by a test.
 
-- Loopback bind, no CORS origin, no web client folder unless asked for.
+- Loopback bind, no CORS origin, no web client folder and no interactive documentation unless asked for.
 - Strict security headers and a content security policy per kind of page. API answers carry `default-src 'none'`.
 - Request body size limit and slow-request timeouts, from the configuration.
 - Logs hold metadata only: method, route pattern, status, duration. No query string, header, body or user content.
@@ -114,7 +114,7 @@ Add a profile and an error types file and list the code in `config/app.json`. No
 ```
 config/            instance settings and language profiles
 data/              error types and grammar rules, one file per language
-docs/              language data format, security events
+docs/              language data format, security events, interactive documentation
 packages/
   server/          HTTP server, registry, OpenAPI, SQLite storage, ports
   web/             React + Vite client

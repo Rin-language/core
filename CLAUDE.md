@@ -1,23 +1,20 @@
 # Rin (working name)
 
-Open-core language immersion app, focused on Japanese first but designed to handle several languages. Writing practice with AI correction and daily prompts, an epub reader, a streak shared by all activities, and a curated list of native content in the target language (v1). A recommendation/curation system comes in v2.
+Open-source language immersion app, focused on Japanese first but designed to handle several languages. Writing practice with AI correction and daily prompts, an epub reader, a streak shared by all activities, and a list of native content in the target language.
 
 @BIBLE.md
 
 ## Philosophy
 
 - The core is open source. Technical users self-host it, plug in their own AI API or run models locally.
-- The paid offer is zero friction: a hosted service with the data (the curated list), sync, later the recommendation system and possibly a mobile app. Planned price: 5 USD/month.
-- Self-hosted and hosted must run the SAME client and the SAME core handlers. Only the base URL and the injected providers differ.
-- Free tools matter to the author. Never cripple the open-source core to push the paid plan.
+- Every deployment runs the SAME client and the SAME core handlers. Only the configuration and the injected providers differ.
+- Free tools matter to the author. Never cripple the open-source core.
 
 ## Repos
 
-- `contract` (public, separate repo, published as a versioned npm package): Zod schemas and inferred types only. No business logic, no runtime dependency besides Zod. Single source of truth shared by core, cloud and mobile.
+- `contract` (public, separate repo, published as a versioned npm package): Zod schemas and inferred types only. No business logic, no runtime dependency besides Zod. Single source of truth shared by every client and server of the API.
 - `core` (public, license to be decided: AGPL or BSL): web client, base server, correction/streak/reader/list logic, docker compose. Depends on `contract`. This repo is the one you are in.
-- `cloud` (private, later): auth, Stripe, quota and cost ledger, managed LLM gateway, sync. Imports `core`, depends on `contract`.
-- `mobile` (later): depends on `contract` only.
-- Start with `contract` and `core`. Create `cloud` and `mobile` only when a real need appears.
+- Start with `contract` and `core`.
 
 ### Contract rules
 
@@ -33,7 +30,7 @@ TypeScript everywhere, Node server (Hono), React + Vite web client (i18next for 
 ## Architecture rules
 
 - The contract lives in its own repo (see Repos). Never duplicate or redefine its types in core; import them.
-- Two interfaces from day one: `LLMProvider` (hosted, user API key, or local model) and `Storage` (SQLite now, Postgres in the hosted version).
+- Two interfaces from day one: `LLMProvider` (a remote API with the user's key, or a local model) and `Storage` (SQLite now, other databases possible).
 - Everything that depends on the language (error types, levels, grammar rules, prompts) lives in per-language data and configuration, never hardcoded. Grammar rules are in `data/grammar/<language>.json`, error types in `data/error-types/<language>.json`; see `docs/language-data.md`. Keep that page updated when their format changes.
 - Security events (metadata-only, one per API request, emitted to an injected `SecurityEventSink`; core has no fraud rules): see `docs/security-events.md`, and keep that page updated when the event format or its guarantees change. A new event type must carry no user content, no raw address and no header value.
 - Always provide a `FakeLLMProvider` for tests. Tests never call a real model.
@@ -53,7 +50,7 @@ TypeScript everywhere, Node server (Hono), React + Vite web client (i18next for 
 
 0a Contract repo: package setup, build, tests, publication, correction schemas.
 0 Core foundations: structure, docker compose, SQLite, lint/tests, `LLMProvider` and `Storage` interfaces, `FakeLLMProvider`.
-1 Correction backend. 2 Writing UI. 3 Streak and daily prompts. 4 Epub reader feeding the same streak. 5 The list (save and organize content). 6 Quota hooks (disabled when self-hosted).
+1 Correction backend. 2 Writing UI. 3 Streak and daily prompts. 4 Epub reader feeding the same streak. 5 The list (save and organize content). 6 Quota hooks (disabled by default).
 Slice 0a happens in the `contract` repo, the others in `core`. Slice 0 depends on 0a.
 Only work on the slice I name. Anything outside the current slice is out of scope: note it, do not build it.
 

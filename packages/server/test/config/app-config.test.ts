@@ -90,8 +90,14 @@ describe("parseAppConfig", () => {
     ).toThrow(ConfigError);
   });
 
-  it("enables the interactive documentation by default", () => {
-    expect(parseAppConfig(validConfig).docs.enabled).toBe(true);
+  it("keeps the interactive documentation closed by default", () => {
+    expect(parseAppConfig(validConfig).docs.enabled).toBe(false);
+  });
+
+  it("opens the interactive documentation when the configuration asks", () => {
+    const config = parseAppConfig({ ...validConfig, docs: { enabled: true } });
+
+    expect(config.docs.enabled).toBe(true);
   });
 
   it("accepts exact http and https origins", () => {

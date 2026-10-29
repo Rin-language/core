@@ -11,7 +11,7 @@ const profile: StoredUserProfile = {
 
 /**
  * Behavior every `Storage` implementation must have (in memory, SQLite,
- * Postgres in the hosted version), including the isolation between users.
+ * or any other engine), including the isolation between users.
  */
 export function describeStorageConformance(
   name: string,

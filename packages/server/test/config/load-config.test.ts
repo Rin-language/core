@@ -88,10 +88,10 @@ describe("loadConfig with the shipped configuration", () => {
     expect(languages.ja?.grammar.length).toBeGreaterThan(0);
   });
 
-  it("keeps the interactive documentation enabled and CORS closed", () => {
+  it("ships with the interactive documentation and CORS closed", () => {
     const { app } = loadConfig(shippedConfigDir);
 
-    expect([app.docs.enabled, app.cors.allowedOrigins]).toEqual([true, []]);
+    expect([app.docs.enabled, app.cors.allowedOrigins]).toEqual([false, []]);
   });
 });
 

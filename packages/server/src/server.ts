@@ -28,7 +28,7 @@ export interface StartOptions {
   logDestination?: DestinationStream;
   /**
    * Where the security events go. Without one nothing is measured or queued:
-   * a self-hosted server pays nothing for a feature it does not use.
+   * a server pays nothing for a feature it does not use.
    */
   securityEventSink?: SecurityEventSink;
 }
