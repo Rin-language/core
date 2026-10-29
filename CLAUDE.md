@@ -28,7 +28,7 @@ Open-core language immersion app, focused on Japanese first but designed to hand
 
 ## Stack (defaults, ask before changing)
 
-TypeScript everywhere, Node server, React + Vite web client, Zod for schemas, SQLite behind a `Storage` interface, Vitest for tests, Docker Compose for running, pnpm as package manager.
+TypeScript everywhere, Node server (Hono), React + Vite web client (i18next for translations, JSON locale files), Zod for schemas, SQLite behind a `Storage` interface, Vitest for tests, Docker Compose for running, pnpm as package manager.
 
 ## Architecture rules
 
@@ -65,7 +65,12 @@ Only work on the slice I name. Anything outside the current slice is out of scop
 - Security first: before coding, describe the potential security flaws (threats, abuse cases) of the slice, and again in the review.
 - Model choice for subagents: Haiku for mechanical tasks that need no reasoning (e.g. writing a test from a written test description); Opus for the tasks that matter (code review, security review).
 - Definition of done: see BIBLE.md.
-- Commands: to be filled in after the first slice (install, dev, test, lint, typecheck, build). Keep this file updated when they exist.
+- Commands (details in README.md; keep both updated):
+  - install: `pnpm install`
+  - dev: `pnpm dev` (server), `pnpm --filter @rin-language/core-web dev` (client)
+  - test: `pnpm test`; lint: `pnpm lint`; typecheck: `pnpm typecheck` (server and web)
+  - build: `pnpm --filter @rin-language/core-server build`, `pnpm --filter @rin-language/core-web build`
+  - run in Docker: `docker compose up -d --build`
 
 ## Session notes for the other repos
 
