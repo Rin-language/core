@@ -13,24 +13,24 @@ const LOG_LEVELS = [
 
 const EnvSchema = z
   .object({
-    RIN_CONFIG_DIR: z.string().min(1).default("config"),
+    APP_CONFIG_DIR: z.string().min(1).default("config"),
     // Loopback by default: exposing the server on the network is an explicit choice.
-    RIN_HOST: z.string().min(1).default("127.0.0.1"),
-    RIN_PORT: z
+    APP_HOST: z.string().min(1).default("127.0.0.1"),
+    APP_PORT: z
       .string()
       .regex(/^\d{1,5}$/, "must be a port number")
       .default("3000")
       .transform(Number)
       .pipe(z.number().max(65535)),
-    RIN_DATABASE_PATH: z.string().min(1).default("rin.sqlite"),
-    RIN_LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
+    APP_DATABASE_PATH: z.string().min(1).default("rin.sqlite"),
+    APP_LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
   })
   .transform((env) => ({
-    configDir: env.RIN_CONFIG_DIR,
-    host: env.RIN_HOST,
-    port: env.RIN_PORT,
-    databasePath: env.RIN_DATABASE_PATH,
-    logLevel: env.RIN_LOG_LEVEL,
+    configDir: env.APP_CONFIG_DIR,
+    host: env.APP_HOST,
+    port: env.APP_PORT,
+    databasePath: env.APP_DATABASE_PATH,
+    logLevel: env.APP_LOG_LEVEL,
   }));
 
 export type Env = z.output<typeof EnvSchema>;

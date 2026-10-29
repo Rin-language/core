@@ -19,11 +19,11 @@ describe("parseEnv", () => {
 
   it("reads the values it is given", () => {
     const env = parseEnv({
-      RIN_CONFIG_DIR: "/etc/rin",
-      RIN_HOST: "0.0.0.0",
-      RIN_PORT: "8080",
-      RIN_DATABASE_PATH: "/var/lib/rin/rin.sqlite",
-      RIN_LOG_LEVEL: "warn",
+      APP_CONFIG_DIR: "/etc/rin",
+      APP_HOST: "0.0.0.0",
+      APP_PORT: "8080",
+      APP_DATABASE_PATH: "/var/lib/rin/rin.sqlite",
+      APP_LOG_LEVEL: "warn",
     });
 
     expect(env).toEqual({
@@ -40,15 +40,15 @@ describe("parseEnv", () => {
   });
 
   it.each(["abc", "-1", "70000", "80.5", ""])("rejects the port %j", (port) => {
-    expect(() => parseEnv({ RIN_PORT: port })).toThrow(ConfigError);
+    expect(() => parseEnv({ APP_PORT: port })).toThrow(ConfigError);
   });
 
   it("rejects an unknown log level", () => {
-    expect(() => parseEnv({ RIN_LOG_LEVEL: "verbose" })).toThrow(ConfigError);
+    expect(() => parseEnv({ APP_LOG_LEVEL: "verbose" })).toThrow(ConfigError);
   });
 
   it("does not repeat the rejected value in the error", () => {
-    expect(() => parseEnv({ RIN_PORT: "secret-port-value" })).toThrow(
+    expect(() => parseEnv({ APP_PORT: "secret-port-value" })).toThrow(
       expect.objectContaining({
         message: expect.not.stringContaining("secret-port-value"),
       }),

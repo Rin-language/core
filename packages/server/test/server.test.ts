@@ -28,9 +28,9 @@ async function start() {
   const databasePath = join(dir, "rin.sqlite");
   const server = await startServer(
     parseEnv({
-      RIN_CONFIG_DIR: shippedConfigDir,
-      RIN_DATABASE_PATH: databasePath,
-      RIN_PORT: "0",
+      APP_CONFIG_DIR: shippedConfigDir,
+      APP_DATABASE_PATH: databasePath,
+      APP_PORT: "0",
     }),
     { logDestination: silent },
   );
@@ -81,7 +81,7 @@ describe("startServer", () => {
   it("refuses to start with an invalid configuration", async () => {
     await expect(
       startServer(
-        parseEnv({ RIN_CONFIG_DIR: join(tmpdir(), "rin-no-config") }),
+        parseEnv({ APP_CONFIG_DIR: join(tmpdir(), "rin-no-config") }),
         { logDestination: silent },
       ),
     ).rejects.toThrow(/app\.json/);
