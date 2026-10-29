@@ -8,6 +8,7 @@ import { OPENAPI_ROUTE } from "../openapi/openapi-route.js";
 import type { Clock } from "../ports/clock.js";
 import type { Identity } from "../ports/identity.js";
 import { ApiProblem, STATUS_BY_CODE } from "./api-problem.js";
+import { type AppEnv, UNMATCHED_ROUTE } from "./app-env.js";
 import { cors } from "./cors.js";
 import {
   type DocsAssets,
@@ -15,6 +16,7 @@ import {
   isDocsPath,
   mountDocs,
 } from "./docs.js";
+import { requestEvents, type SecurityEventsOptions } from "./request-events.js";
 import type { Route } from "./route.js";
 import { mountWeb, type WebAssets, webSecurityHeaders } from "./web.js";
 
@@ -30,13 +32,10 @@ export interface AppOptions {
   docs?: DocsAssets;
   /** Absent means the web client is not served. */
   web?: WebAssets;
+  /** Absent means nothing is measured or emitted. */
+  securityEvents?: SecurityEventsOptions;
 }
 
-interface AppEnv {
-  Variables: { requestId: string; route: string };
-}
-
-const UNMATCHED_ROUTE = "unmatched";
 const JSON_CONTENT_TYPE = /^application\/json\s*(?:;|$)/i;
 const BEARER_CHALLENGE = { "WWW-Authenticate": "Bearer" };
 
@@ -62,6 +61,7 @@ function problemResponse(
   context: Context<AppEnv>,
   problem: ApiProblem,
 ): Response {
+  context.set("errorCode", problem.code);
   return context.json(
     problem.toApiError(),
     STATUS_BY_CODE[problem.code],
@@ -74,6 +74,8 @@ async function readJsonBody(context: Context<AppEnv>): Promise<unknown> {
   if (!JSON_CONTENT_TYPE.test(contentType)) {
     throw new ApiProblem("invalid_request", "The request body must be JSON.");
   }
+  const raw = await context.req.arrayBuffer();
+  context.set("requestBytes", raw.byteLength);
   try {
     return await context.req.json();
   } catch (error) {
@@ -112,6 +114,19 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
       "request",
     );
   });
+
+  if (options.securityEvents !== undefined) {
+    app.use(
+      requestEvents({
+        ...options.securityEvents,
+        clock,
+        logger,
+        probeRoutes: new Set(
+          routes.filter((route) => route.isProbe).map((route) => route.path),
+        ),
+      }),
+    );
+  }
 
   const apiSecurityHeaders = secureHeaders({
     contentSecurityPolicy: {
@@ -178,6 +193,7 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
           BEARER_CHALLENGE,
         );
       }
+      if (user !== null) context.set("userId", user.userId);
       const rawBody =
         route.requestSchemaName === undefined
           ? undefined

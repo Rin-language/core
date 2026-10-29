@@ -39,6 +39,8 @@ export interface RouteSpec<
   response: Response;
   /** The error codes this route can answer, documented in OpenAPI. */
   errorCodes: readonly ApiErrorCode[];
+  /** Polled by monitoring all day: left out of the security events, or it would drown the averages. */
+  isProbe?: boolean;
   handler: (
     input: HandlerInput<Auth, Request>,
   ) => z.input<Response> | Promise<z.input<Response>>;
@@ -59,6 +61,7 @@ export interface Route {
   readonly requestSchemaName: string | undefined;
   readonly responseSchemaName: string;
   readonly errorCodes: readonly ApiErrorCode[];
+  readonly isProbe: boolean;
   /** Validates the body, calls the handler, validates what it returns. */
   run(input: RouteRunInput): Promise<unknown>;
 }
@@ -135,6 +138,7 @@ export function defineRoute<
     requestSchemaName,
     responseSchemaName,
     errorCodes: spec.errorCodes,
+    isProbe: spec.isProbe ?? false,
     async run({ user, rawBody }) {
       if (spec.auth === "user" && user === undefined) {
         throw new ApiProblem("unauthorized", "Authentication is required.");

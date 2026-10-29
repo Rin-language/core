@@ -60,6 +60,9 @@ export const docsSecurityHeaders = secureHeaders({
 export const isDocsPath = (path: string): boolean =>
   path === DOCS_PATH || path === DOCS_SCRIPT_PATH;
 
+/** The route labels the documentation answers under. */
+export const DOCS_ROUTES = [DOCS_PATH, DOCS_SCRIPT_PATH];
+
 export const DOCS_ENDPOINTS = [`GET ${DOCS_PATH}`, `GET ${DOCS_SCRIPT_PATH}`];
 
 export function mountDocs<Env extends { Variables: { route: string } }>(

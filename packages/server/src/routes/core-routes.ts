@@ -38,6 +38,7 @@ export function buildCoreRoutes(config: LoadedConfig): Route[] {
       description:
         "Answers ok while the server process is running. It checks nothing else.",
       auth: "public",
+      isProbe: true,
       response: HealthResponse,
       errorCodes: [],
       handler: () => ({ status: "ok" as const }),
