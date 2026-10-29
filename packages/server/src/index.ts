@@ -25,4 +25,5 @@ export type {
 export { buildCoreRoutes } from "./routes/core-routes.js";
 export type { EventPublisher } from "./security/event-publisher.js";
 export { createEventPublisher } from "./security/event-publisher.js";
+export type { RunningServer, StartOptions } from "./server.js";
 export { startServer } from "./server.js";

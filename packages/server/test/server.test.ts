@@ -9,10 +9,16 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { FakeSecurityEventSink } from "@rin-language/core-test-kit";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseEnv } from "../src/config/env.js";
 import { NoIdentity } from "../src/identity/no-identity.js";
-import { type RunningServer, startServer } from "../src/server.js";
+import { createIpFingerprinter } from "../src/security/ip-fingerprint.js";
+import {
+  type RunningServer,
+  type StartOptions,
+  startServer,
+} from "../src/server.js";
 
 const shippedConfigDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -50,6 +56,7 @@ function configWith(dir: string, overrides: Record<string, unknown>): string {
 async function start(
   appOverrides?: Record<string, unknown>,
   extraEnv: Record<string, string> = {},
+  startOptions: StartOptions = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), "rin-server-"));
   temporaryDirs.push(dir);
@@ -64,7 +71,7 @@ async function start(
       APP_PORT: "0",
       ...extraEnv,
     }),
-    { logDestination: silent },
+    { logDestination: silent, ...startOptions },
   );
   running.push(server);
   return { server, databasePath, url: `http://${server.host}:${server.port}` };
@@ -201,6 +208,159 @@ describe("startServer", () => {
         { logDestination: silent },
       ),
     ).rejects.toThrow(/app\.json/);
+  });
+});
+
+const FINGERPRINT_ENV = {
+  APP_IP_FINGERPRINT_KEY: "k".repeat(32),
+  APP_IP_FINGERPRINT_KEY_ID: "k1",
+};
+const fingerprint = createIpFingerprinter({ key: "k".repeat(32), keyId: "k1" });
+
+describe("startServer security events", () => {
+  async function eventsOf(
+    call: (url: string) => Promise<unknown>,
+    options: {
+      appOverrides?: Record<string, unknown>;
+      env?: Record<string, string>;
+    } = {},
+  ) {
+    const sink = new FakeSecurityEventSink();
+    const { server, url } = await start(options.appOverrides, options.env, {
+      securityEventSink: sink,
+    });
+    await call(url);
+    await server.close();
+    return sink.events;
+  }
+
+  it("delivers the event of a real request to the receiver", async () => {
+    const events = await eventsOf((url) => fetch(`${url}/v1/limits`));
+
+    expect(events).toMatchObject([
+      { type: "request", route: "/v1/limits", status: 200 },
+    ]);
+  });
+
+  it("leaves out the health probe", async () => {
+    const events = await eventsOf((url) => fetch(`${url}/health`));
+
+    expect(events).toEqual([]);
+  });
+
+  it("fingerprints the address of the real connection", async () => {
+    const events = await eventsOf((url) => fetch(`${url}/v1/limits`), {
+      env: FINGERPRINT_ENV,
+    });
+
+    expect(events[0]).toMatchObject({
+      ipFingerprint: fingerprint("127.0.0.1"),
+    });
+  });
+
+  it("emits no fingerprint without a key", async () => {
+    const events = await eventsOf((url) => fetch(`${url}/v1/limits`));
+
+    expect(events[0]).not.toHaveProperty("ipFingerprint");
+  });
+
+  it("ignores X-Forwarded-For by default", async () => {
+    const events = await eventsOf(
+      (url) =>
+        fetch(`${url}/v1/limits`, {
+          headers: { "x-forwarded-for": "203.0.113.7" },
+        }),
+      { env: FINGERPRINT_ENV },
+    );
+
+    expect(events[0]).toMatchObject({
+      ipFingerprint: fingerprint("127.0.0.1"),
+    });
+  });
+
+  it("reads X-Forwarded-For when the configuration trusts one proxy", async () => {
+    const events = await eventsOf(
+      (url) =>
+        fetch(`${url}/v1/limits`, {
+          headers: { "x-forwarded-for": "203.0.113.7" },
+        }),
+      {
+        env: FINGERPRINT_ENV,
+        appOverrides: { securityEvents: { trustedProxyHops: 1 } },
+      },
+    );
+
+    expect(events[0]).toMatchObject({
+      ipFingerprint: fingerprint("203.0.113.7"),
+    });
+  });
+
+  it("waits for the events still queued before it finishes closing", async () => {
+    const sink = new FakeSecurityEventSink();
+    const { server, url } = await start(undefined, undefined, {
+      securityEventSink: sink,
+    });
+    sink.hold();
+    await fetch(`${url}/v1/limits`);
+
+    let isClosed = false;
+    const closing = server.close().then(() => {
+      isClosed = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const wasClosedWhileWaiting = isClosed;
+    sink.release();
+    await closing;
+
+    expect([wasClosedWhileWaiting, sink.events.length]).toEqual([false, 1]);
+  });
+
+  it("holds back as many events as the configuration allows", async () => {
+    const sink = new FakeSecurityEventSink();
+    const { server, url } = await start(
+      { securityEvents: { queueSize: 1 } },
+      undefined,
+      { securityEventSink: sink },
+    );
+    sink.hold();
+    for (let n = 0; n < 5; n++) await fetch(`${url}/v1/limits`);
+    sink.release();
+    await server.close();
+
+    // One in flight and one queued; the three others are reported as lost.
+    expect(sink.events.map((event) => event.type)).toEqual([
+      "request",
+      "request",
+      "events_dropped",
+    ]);
+  });
+
+  it("warns when a fingerprint key is set but nothing receives events", async () => {
+    const lines: string[] = [];
+    await start(undefined, FINGERPRINT_ENV, {
+      logDestination: { write: (line: string) => void lines.push(line) },
+    });
+
+    expect(lines.join("")).toContain("APP_IP_FINGERPRINT_KEY");
+  });
+
+  it("does not warn about the key when a receiver is configured", async () => {
+    const lines: string[] = [];
+    await start(undefined, FINGERPRINT_ENV, {
+      logDestination: { write: (line: string) => void lines.push(line) },
+      securityEventSink: new FakeSecurityEventSink(),
+    });
+
+    expect(lines.join("")).not.toContain("APP_IP_FINGERPRINT_KEY");
+  });
+
+  it("does not repeat the fingerprint key in its logs", async () => {
+    const lines: string[] = [];
+    await start(undefined, FINGERPRINT_ENV, {
+      logDestination: { write: (line: string) => void lines.push(line) },
+    });
+
+    expect(lines.join("")).not.toContain("k".repeat(32));
   });
 });
 
