@@ -60,6 +60,9 @@ Only work on the slice I name. Anything outside the current slice is out of scop
 
 - Work in plan mode first on foundations and anything touching the contract.
 - One branch and one commit series per slice. Small commits.
+- Use the `superpowers` skills: brainstorming before design, writing-plans for a plan, test-driven-development for code, systematic-debugging for bugs, requesting-code-review to detect potential problems, verification-before-completion before claiming done.
+- Security first: before coding, describe the potential security flaws (threats, abuse cases) of the slice, and again in the review.
+- Model choice for subagents: Haiku for mechanical tasks that need no reasoning (e.g. writing a test from a written test description); Opus for the tasks that matter (code review, security review).
 - Definition of done: see BIBLE.md.
 - Commands: to be filled in after the first slice (install, dev, test, lint, typecheck, build). Keep this file updated when they exist.
 
