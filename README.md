@@ -18,7 +18,7 @@ Then open <http://127.0.0.1:3000> (the client). The OpenAPI document is at <http
 
 ## Develop
 
-Requirements: Node 24 and pnpm 10.
+Requirements: Node 24.4.1 or later (earlier 24.x releases have a known denial of service) and pnpm 10.
 
 ```sh
 pnpm install

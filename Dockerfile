@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24.1-bookworm-slim AS build
+FROM node:24.22.2-bookworm-slim AS build
 # better-sqlite3 is compiled here; the runtime image only gets the result.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
@@ -20,7 +20,7 @@ RUN pnpm --filter @rin-language/core-web build \
   && pnpm --filter @rin-language/core-server build \
   && pnpm --filter @rin-language/core-server --prod --legacy deploy /out/server
 
-FROM node:24.1-bookworm-slim AS runtime
+FROM node:24.22.2-bookworm-slim AS runtime
 ENV NODE_ENV=production \
   APP_HOST=0.0.0.0 \
   APP_PORT=3000 \

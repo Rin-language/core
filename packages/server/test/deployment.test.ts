@@ -65,6 +65,29 @@ describe("Dockerfile", () => {
     expect(lastStage).toMatch(/^USER\s+node\s*$/m);
   });
 
+  describe("Node runtime", () => {
+    const versions = [
+      ...dockerfile.matchAll(/^FROM node:(\d+)\.(\d+)\.(\d+)-/gm),
+    ].map((match) => match.slice(1, 4).map(Number));
+
+    it("names an exact version in every stage, so a rebuild cannot change it", () => {
+      expect(versions).toHaveLength(2);
+    });
+
+    it("uses the same version to build and to run", () => {
+      expect(versions[0]).toEqual(versions[1]);
+    });
+
+    it("is past the 24.4.1 fix for the V8 hash-flooding denial of service", () => {
+      const [major = 0, minor = 0, patch = 0] = versions[0] ?? [];
+      const isPatched =
+        major > 24 ||
+        (major === 24 && (minor > 4 || (minor === 4 && patch >= 1)));
+
+      expect(isPatched).toBe(true);
+    });
+  });
+
   it("starts the compiled server, not a development tool", () => {
     expect(dockerfile).toMatch(/CMD \["node", "server\/dist\/main\.js"\]/);
   });
