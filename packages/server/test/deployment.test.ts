@@ -106,6 +106,30 @@ describe("Dockerfile", () => {
     expect(install).not.toMatch(/--no-optional|\$OPTIONAL/);
   });
 
+  describe("package managers", () => {
+    const runtimeStage = dockerfile.slice(dockerfile.lastIndexOf("FROM "));
+    const buildStage = dockerfile.slice(0, dockerfile.lastIndexOf("FROM "));
+
+    it.each(["npm", "npx", "corepack", "yarn"])(
+      "removes %s from the image that runs the server",
+      (tool) => {
+        expect(runtimeStage).toMatch(
+          new RegExp(
+            `RUN rm -rf[^\\n]*(\\\\\\n[^\\n]*)*/usr/local/bin/${tool}\\b`,
+          ),
+        );
+      },
+    );
+
+    it("removes the package managers' own files, not only their commands", () => {
+      expect(runtimeStage).toMatch(/\/usr\/local\/lib\/node_modules\/npm/);
+    });
+
+    it("keeps corepack in the build stage, which runs pnpm", () => {
+      expect(buildStage).toMatch(/corepack enable/);
+    });
+  });
+
   it("starts the compiled server, not a development tool", () => {
     expect(dockerfile).toMatch(/CMD \["node", "server\/dist\/main\.js"\]/);
   });

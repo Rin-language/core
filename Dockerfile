@@ -33,6 +33,17 @@ ENV NODE_ENV=production \
   APP_CONFIG_DIR=/app/config \
   APP_DATABASE_PATH=/var/lib/rin/rin.sqlite \
   APP_WEB_DIR=/app/web
+# The server only runs `node`. The package managers of the base image are not
+# needed to run it and carry their own dependencies, which scanners flag.
+RUN rm -rf \
+  /usr/local/lib/node_modules/npm \
+  /usr/local/lib/node_modules/corepack \
+  /usr/local/bin/npm \
+  /usr/local/bin/npx \
+  /usr/local/bin/corepack \
+  /usr/local/bin/yarn \
+  /usr/local/bin/yarnpkg \
+  /opt/yarn-v*
 WORKDIR /app
 COPY --from=build /out/server ./server
 COPY --from=build /repo/packages/web/dist ./web
