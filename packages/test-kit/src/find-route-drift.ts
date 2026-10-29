@@ -10,6 +10,11 @@ export interface RouteDrift {
   unmounted: string[];
 }
 
+export interface DriftOptions {
+  /** Endpoints that are served on purpose outside the API, such as "GET /docs". */
+  ignore?: readonly string[];
+}
+
 const MIDDLEWARE_METHOD = "ALL";
 
 /**
@@ -19,11 +24,14 @@ const MIDDLEWARE_METHOD = "ALL";
 export function findRouteDrift(
   mountedRoutes: readonly MountedRoute[],
   document: { paths: Record<string, Record<string, unknown>> },
+  options: DriftOptions = {},
 ): RouteDrift {
+  const ignored = new Set(options.ignore);
   const mounted = new Set(
     mountedRoutes
       .filter(({ method }) => method !== MIDDLEWARE_METHOD)
-      .map(({ method, path }) => `${method} ${path}`),
+      .map(({ method, path }) => `${method} ${path}`)
+      .filter((endpoint) => !ignored.has(endpoint)),
   );
   const documented = new Set(
     Object.entries(document.paths).flatMap(([path, operations]) =>

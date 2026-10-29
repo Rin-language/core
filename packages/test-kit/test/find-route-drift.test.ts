@@ -62,4 +62,29 @@ describe("findRouteDrift", () => {
 
     expect(findRouteDrift(mounted, document).undocumented).toEqual([]);
   });
+
+  it("skips the endpoints it is told are not part of the API", () => {
+    const mounted = [
+      { method: "GET", path: "/v1/limits" },
+      { method: "POST", path: "/v1/echo" },
+      { method: "GET", path: "/docs" },
+    ];
+
+    expect(
+      findRouteDrift(mounted, document, { ignore: ["GET /docs"] }).undocumented,
+    ).toEqual([]);
+  });
+
+  it("still reports the endpoints that are not ignored", () => {
+    const mounted = [
+      { method: "GET", path: "/v1/limits" },
+      { method: "POST", path: "/v1/echo" },
+      { method: "GET", path: "/docs" },
+      { method: "GET", path: "/v1/rogue" },
+    ];
+
+    expect(
+      findRouteDrift(mounted, document, { ignore: ["GET /docs"] }).undocumented,
+    ).toEqual(["GET /v1/rogue"]);
+  });
 });
