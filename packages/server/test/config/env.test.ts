@@ -42,6 +42,60 @@ describe("parseEnv", () => {
     ]).toEqual([undefined, "/srv/web"]);
   });
 
+  it("computes no IP fingerprint unless a key is given", () => {
+    expect(parseEnv({}).ipFingerprint).toBeUndefined();
+  });
+
+  it("reads the IP fingerprint key and its identifier", () => {
+    const env = parseEnv({
+      APP_IP_FINGERPRINT_KEY: "k".repeat(32),
+      APP_IP_FINGERPRINT_KEY_ID: "2026-10",
+    });
+
+    expect(env.ipFingerprint).toEqual({
+      key: "k".repeat(32),
+      keyId: "2026-10",
+    });
+  });
+
+  it("refuses a fingerprint key without an identifier", () => {
+    expect(() => parseEnv({ APP_IP_FINGERPRINT_KEY: "k".repeat(32) })).toThrow(
+      ConfigError,
+    );
+  });
+
+  it("refuses a fingerprint identifier without a key", () => {
+    expect(() => parseEnv({ APP_IP_FINGERPRINT_KEY_ID: "2026-10" })).toThrow(
+      ConfigError,
+    );
+  });
+
+  it("refuses a fingerprint key shorter than 32 characters", () => {
+    expect(() =>
+      parseEnv({
+        APP_IP_FINGERPRINT_KEY: "short",
+        APP_IP_FINGERPRINT_KEY_ID: "2026-10",
+      }),
+    ).toThrow(ConfigError);
+  });
+
+  it("refuses an identifier that is not a plain label", () => {
+    expect(() =>
+      parseEnv({
+        APP_IP_FINGERPRINT_KEY: "k".repeat(32),
+        APP_IP_FINGERPRINT_KEY_ID: "has space",
+      }),
+    ).toThrow(ConfigError);
+  });
+
+  it("never repeats the fingerprint key in an error", () => {
+    const key = "super-secret-key-".padEnd(40, "x");
+
+    expect(() => parseEnv({ APP_IP_FINGERPRINT_KEY: key })).toThrow(
+      expect.objectContaining({ message: expect.not.stringContaining(key) }),
+    );
+  });
+
   it("ignores variables that are not its own", () => {
     expect(() => parseEnv({ PATH: "/usr/bin", HOME: "/root" })).not.toThrow();
   });
