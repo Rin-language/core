@@ -54,6 +54,8 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `APP_DATABASE_PATH` | `rin.sqlite` | SQLite file. Created readable by its owner only. |
 | `APP_LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` or `silent`. |
 | `APP_WEB_DIR` | unset | Built web client to serve. Unset means the server only exposes the API. |
+| `APP_IP_FINGERPRINT_KEY` | unset | Secret key (32 characters or more) for the network fingerprint of [security events](docs/security-events.md). Never put it in `app.json`. |
+| `APP_IP_FINGERPRINT_KEY_ID` | unset | Label of that key, set together with it, so a rotation shows in the events. |
 
 **`config/app.json`** holds the tunable settings: enabled languages, size limits, request timeouts, CORS and the documentation page.
 
@@ -65,6 +67,7 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `timeouts` | `headersMs` and `requestMs`, protection against slow requests. |
 | `cors.allowedOrigins` | Exact origins allowed to read the API from a browser. Empty by default. No wildcard, no `null`, no credentials. |
 | `docs.enabled` | Serve `/docs`. On by default. |
+| `securityEvents` | `trustedProxyHops` (proxies of yours in front of the server, 0 by default), `queueSize` (events held back while the receiver is slow) and `clientKinds` (how a User-Agent is reduced to a kind). See [docs/security-events.md](docs/security-events.md). |
 
 An invalid file stops the server at startup with a message naming the file and the rule.
 
@@ -90,6 +93,7 @@ Everything exposed is closed until it is opened on purpose, and each default is 
 - Strict security headers and a content security policy per kind of page. API answers carry `default-src 'none'`.
 - Request body size limit and slow-request timeouts, from the configuration.
 - Logs hold metadata only: method, route pattern, status, duration. No query string, header, body or user content.
+- Security events, off unless a host plugs a receiver in: one metadata-only event per API request (sizes, status, error code, a keyed hash of the caller's network, a coarse client kind), delivered in the background through a bounded queue that can neither slow a request nor grow without limit. See [docs/security-events.md](docs/security-events.md).
 - The server owns all limits and, later, all prompts. The client never sends a free-form prompt.
 
 ## Add an interface language
@@ -110,7 +114,7 @@ Add a profile and an error types file and list the code in `config/app.json`. No
 ```
 config/            instance settings and language profiles
 data/              error types and grammar rules, one file per language
-docs/              language data format
+docs/              language data format, security events
 packages/
   server/          HTTP server, registry, OpenAPI, SQLite storage, ports
   web/             React + Vite client

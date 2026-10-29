@@ -35,6 +35,7 @@ TypeScript everywhere, Node server (Hono), React + Vite web client (i18next for 
 - The contract lives in its own repo (see Repos). Never duplicate or redefine its types in core; import them.
 - Two interfaces from day one: `LLMProvider` (hosted, user API key, or local model) and `Storage` (SQLite now, Postgres in the hosted version).
 - Everything that depends on the language (error types, levels, grammar rules, prompts) lives in per-language data and configuration, never hardcoded. Grammar rules are in `data/grammar/<language>.json`, error types in `data/error-types/<language>.json`; see `docs/language-data.md`. Keep that page updated when their format changes.
+- Security events (metadata-only, one per API request, emitted to an injected `SecurityEventSink`; core has no fraud rules): see `docs/security-events.md`, and keep that page updated when the event format or its guarantees change. A new event type must carry no user content, no raw address and no header value.
 - Always provide a `FakeLLMProvider` for tests. Tests never call a real model.
 - Business logic depends on interfaces, never on a concrete provider or database.
 

@@ -1,3 +1,5 @@
+export type { Env } from "./config/env.js";
+export { parseEnv } from "./config/env.js";
 export type { LoadedConfig } from "./config/load-config.js";
 export { loadConfig } from "./config/load-config.js";
 export { createApp } from "./http/create-app.js";
