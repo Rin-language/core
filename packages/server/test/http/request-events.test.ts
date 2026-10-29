@@ -134,6 +134,7 @@ describe("request events", () => {
         "durationMs",
         "requestBytes",
         "responseBytes",
+        "clientKind",
       ].sort(),
     );
   });
@@ -201,6 +202,37 @@ describe("request events: sizes", () => {
     const response = await app.request("/v1/ping");
 
     expect(await response.json()).toEqual({ status: "ok" });
+  });
+});
+
+describe("request events: the kind of client", () => {
+  it.each([
+    [
+      { "user-agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0.0.0" },
+      "browser",
+    ],
+    [{ "user-agent": "curl/8.4.0" }, "script"],
+    [
+      { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
+      "declared_bot",
+    ],
+    [{}, "none"],
+  ])("classifies the headers %j as %s", async (headers, kind) => {
+    const { app, events } = setup();
+
+    await app.request("/v1/ping", { headers });
+
+    expect((await events())[0]?.clientKind).toBe(kind);
+  });
+
+  it("never carries the User-Agent itself", async () => {
+    const { app, events } = setup();
+
+    await app.request("/v1/ping", {
+      headers: { "user-agent": "Mozilla/5.0 unique-agent-marker" },
+    });
+
+    expect(JSON.stringify(await events())).not.toContain("unique-agent-marker");
   });
 });
 

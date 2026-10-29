@@ -234,6 +234,18 @@ describe("startServer security events", () => {
     return sink.events;
   }
 
+  it("classifies the client with the patterns of the configuration", async () => {
+    const events = await eventsOf((url) => fetch(`${url}/v1/limits`), {
+      appOverrides: {
+        securityEvents: {
+          clientKinds: { declaredBot: [], script: [], browser: ["node"] },
+        },
+      },
+    });
+
+    expect(events[0]).toMatchObject({ clientKind: "browser" });
+  });
+
   it("delivers the event of a real request to the receiver", async () => {
     const events = await eventsOf((url) => fetch(`${url}/v1/limits`));
 

@@ -11,6 +11,13 @@ export interface IpFingerprint {
 }
 
 /**
+ * A coarse reading of the User-Agent, which itself is never kept: a script and
+ * a browser tell a fraud rule something, the exact version only singles a
+ * person out.
+ */
+export type ClientKind = "browser" | "script" | "declared_bot" | "none";
+
+/**
  * What the server saw of one request, and nothing of what it carried: no body,
  * no query string, no header, no raw path, no address.
  */
@@ -25,6 +32,7 @@ export interface RequestEvent {
   durationMs: number;
   requestBytes: number;
   responseBytes: number;
+  clientKind: ClientKind;
   userId?: UserId;
   /** The `ApiError` code of a failed request. */
   errorCode?: ApiErrorCode;

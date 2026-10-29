@@ -45,6 +45,36 @@ describe("parseAppConfig", () => {
     expect(parseAppConfig(validConfig).securityEvents.queueSize).toBe(1000);
   });
 
+  it("recognizes browsers, scripts and declared bots by default", () => {
+    const { clientKinds } = parseAppConfig(validConfig).securityEvents;
+
+    expect([
+      clientKinds.browser.length > 0,
+      clientKinds.script.length > 0,
+      clientKinds.declaredBot.length > 0,
+    ]).toEqual([true, true, true]);
+  });
+
+  it("reads the patterns of each kind of client", () => {
+    const clientKinds = { declaredBot: ["x"], script: ["y"], browser: ["z"] };
+
+    expect(
+      parseAppConfig({ ...validConfig, securityEvents: { clientKinds } })
+        .securityEvents.clientKinds,
+    ).toEqual(clientKinds);
+  });
+
+  it.each([[[""]], [[1]], ["curl"]])("rejects the pattern list %j", (list) => {
+    expect(() =>
+      parseAppConfig({
+        ...validConfig,
+        securityEvents: {
+          clientKinds: { declaredBot: list, script: [], browser: [] },
+        },
+      }),
+    ).toThrow(ConfigError);
+  });
+
   it.each([0, -5, 2.5, "10"])("rejects %j as a queue size", (queueSize) => {
     expect(() =>
       parseAppConfig({ ...validConfig, securityEvents: { queueSize } }),

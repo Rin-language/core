@@ -11,6 +11,7 @@ import { NoIdentity } from "./identity/no-identity.js";
 import { createLogger } from "./observability/logger.js";
 import type { SecurityEventSink } from "./ports/security-events.js";
 import { buildCoreRoutes } from "./routes/core-routes.js";
+import type { ClientKindPatterns } from "./security/client-kind.js";
 import { createEventPublisher } from "./security/event-publisher.js";
 import { createIpFingerprinter } from "./security/ip-fingerprint.js";
 import { createSqliteStorage } from "./storage/sqlite/sqlite-storage.js";
@@ -34,7 +35,11 @@ export interface StartOptions {
 
 function buildSecurityEvents(
   env: Env,
-  settings: { trustedProxyHops: number; queueSize: number },
+  settings: {
+    trustedProxyHops: number;
+    queueSize: number;
+    clientKinds: ClientKindPatterns;
+  },
   sink: SecurityEventSink | undefined,
   logger: Logger,
 ): SecurityEventsOptions | undefined {
@@ -54,6 +59,7 @@ function buildSecurityEvents(
       logger,
     }),
     trustedProxyHops: settings.trustedProxyHops,
+    clientKinds: settings.clientKinds,
     ...(env.ipFingerprint === undefined
       ? {}
       : { fingerprint: createIpFingerprinter(env.ipFingerprint) }),

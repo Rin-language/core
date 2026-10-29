@@ -1,5 +1,6 @@
 import { LanguageCode, LimitsResponse } from "@rin-language/contract";
 import { z } from "zod";
+import { DEFAULT_CLIENT_KIND_PATTERNS } from "../security/client-kind.js";
 import { parseConfig } from "./config-error.js";
 
 const isExactHttpOrigin = (value: string): boolean => {
@@ -19,6 +20,13 @@ const AllowedOrigin = z
     isExactHttpOrigin,
     "must be an exact http(s) origin such as https://app.example.com: no wildcard, null, path or trailing slash",
   );
+
+// Fresh arrays: a parsed config must never share state with the defaults.
+const defaultClientKinds = () => ({
+  declaredBot: [...DEFAULT_CLIENT_KIND_PATTERNS.declaredBot],
+  script: [...DEFAULT_CLIENT_KIND_PATTERNS.script],
+  browser: [...DEFAULT_CLIENT_KIND_PATTERNS.browser],
+});
 
 const hasNoDuplicate = (values: readonly string[]) =>
   new Set(values).size === values.length;
@@ -55,8 +63,21 @@ const AppConfigShape = z.strictObject({
       // Events held back while the receiver is slow; past this they are dropped
       // and reported, so memory stays bounded.
       queueSize: z.number().int().positive().default(1000),
+      // Fragments of the User-Agent that tell what kind of client it is. Only
+      // the kind is ever kept, never the User-Agent.
+      clientKinds: z
+        .strictObject({
+          declaredBot: z.array(z.string().min(1)),
+          script: z.array(z.string().min(1)),
+          browser: z.array(z.string().min(1)),
+        })
+        .default(defaultClientKinds),
     })
-    .default({ trustedProxyHops: 0, queueSize: 1000 }),
+    .default(() => ({
+      trustedProxyHops: 0,
+      queueSize: 1000,
+      clientKinds: defaultClientKinds(),
+    })),
 });
 
 export const AppConfig = AppConfigShape.refine(

@@ -3,6 +3,11 @@ import type { Logger } from "pino";
 import type { Clock } from "../ports/clock.js";
 import type { IpFingerprint, RequestEvent } from "../ports/security-events.js";
 import { remoteAddressOf, resolveClientIp } from "../security/client-ip.js";
+import {
+  type ClientKindPatterns,
+  classifyClient,
+  DEFAULT_CLIENT_KIND_PATTERNS,
+} from "../security/client-kind.js";
 import type { EventPublisher } from "../security/event-publisher.js";
 import { type AppEnv, UNMATCHED_ROUTE } from "./app-env.js";
 import { DOCS_ROUTES } from "./docs.js";
@@ -13,6 +18,7 @@ export interface SecurityEventsOptions {
   /** Absent means events carry no network identity. */
   fingerprint?: (address: string) => IpFingerprint | undefined;
   trustedProxyHops: number;
+  clientKinds?: ClientKindPatterns;
 }
 
 /** Served files and docs are not API traffic; a flood of them would hide the signal. */
@@ -31,6 +37,7 @@ export function requestEvents(
   },
 ): MiddlewareHandler<AppEnv> {
   const { publisher, fingerprint, trustedProxyHops, clock, logger } = options;
+  const clientKinds = options.clientKinds ?? DEFAULT_CLIENT_KIND_PATTERNS;
 
   return async (context, next) => {
     const startedAt = clock.now();
@@ -61,6 +68,10 @@ export function requestEvents(
         durationMs: clock.now().getTime() - startedAt.getTime(),
         requestBytes: context.get("requestBytes") ?? 0,
         responseBytes,
+        clientKind: classifyClient(
+          context.req.header("user-agent"),
+          clientKinds,
+        ),
         ...(userId === undefined ? {} : { userId }),
         ...(errorCode === undefined ? {} : { errorCode }),
         ...(ipFingerprint === undefined ? {} : { ipFingerprint }),

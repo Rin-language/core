@@ -19,6 +19,7 @@ const requestEvent = (n: number): RequestEvent => ({
   durationMs: 1,
   requestBytes: 0,
   responseBytes: 15,
+  clientKind: "browser",
 });
 
 const setup = (queueSize = 3) => {

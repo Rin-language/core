@@ -11,6 +11,7 @@ export type {
   LlmResponse,
 } from "./ports/llm-provider.js";
 export type {
+  ClientKind,
   EventsDroppedEvent,
   IpFingerprint,
   RequestEvent,
