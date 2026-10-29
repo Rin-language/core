@@ -51,9 +51,12 @@ const AppConfigShape = z.strictObject({
       // Proxies we run or trust in front of the server, such as a CDN and a PaaS
       // router. 0 means the connection address is the caller and X-Forwarded-For
       // is ignored, which is the only safe value without a proxy.
-      trustedProxyHops: z.number().int().nonnegative(),
+      trustedProxyHops: z.number().int().nonnegative().default(0),
+      // Events held back while the receiver is slow; past this they are dropped
+      // and reported, so memory stays bounded.
+      queueSize: z.number().int().positive().default(1000),
     })
-    .default({ trustedProxyHops: 0 }),
+    .default({ trustedProxyHops: 0, queueSize: 1000 }),
 });
 
 export const AppConfig = AppConfigShape.refine(

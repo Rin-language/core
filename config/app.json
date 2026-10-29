@@ -11,5 +11,5 @@
   "timeouts": { "headersMs": 10000, "requestMs": 30000 },
   "cors": { "allowedOrigins": [] },
   "docs": { "enabled": true },
-  "securityEvents": { "trustedProxyHops": 0 }
+  "securityEvents": { "trustedProxyHops": 0, "queueSize": 1000 }
 }

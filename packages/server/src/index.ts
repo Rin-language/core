@@ -11,9 +11,18 @@ export type {
   LlmResponse,
 } from "./ports/llm-provider.js";
 export type {
+  EventsDroppedEvent,
+  IpFingerprint,
+  RequestEvent,
+  SecurityEvent,
+  SecurityEventSink,
+} from "./ports/security-events.js";
+export type {
   Storage,
   StoredUserProfile,
   UserProfileStore,
 } from "./ports/storage.js";
 export { buildCoreRoutes } from "./routes/core-routes.js";
+export type { EventPublisher } from "./security/event-publisher.js";
+export { createEventPublisher } from "./security/event-publisher.js";
 export { startServer } from "./server.js";

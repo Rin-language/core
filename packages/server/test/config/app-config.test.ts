@@ -41,6 +41,16 @@ describe("parseAppConfig", () => {
     expect(config.securityEvents.trustedProxyHops).toBe(2);
   });
 
+  it("holds back a bounded number of security events by default", () => {
+    expect(parseAppConfig(validConfig).securityEvents.queueSize).toBe(1000);
+  });
+
+  it.each([0, -5, 2.5, "10"])("rejects %j as a queue size", (queueSize) => {
+    expect(() =>
+      parseAppConfig({ ...validConfig, securityEvents: { queueSize } }),
+    ).toThrow(ConfigError);
+  });
+
   it.each([-1, 1.5, "1"])("rejects %j trusted proxies", (hops) => {
     expect(() =>
       parseAppConfig({
