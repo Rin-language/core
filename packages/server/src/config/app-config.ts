@@ -46,6 +46,14 @@ const AppConfigShape = z.strictObject({
     .strictObject({ allowedOrigins: z.array(AllowedOrigin) })
     .default({ allowedOrigins: [] }),
   docs: z.strictObject({ enabled: z.boolean() }).default({ enabled: true }),
+  securityEvents: z
+    .strictObject({
+      // Proxies we run or trust in front of the server, such as a CDN and a PaaS
+      // router. 0 means the connection address is the caller and X-Forwarded-For
+      // is ignored, which is the only safe value without a proxy.
+      trustedProxyHops: z.number().int().nonnegative(),
+    })
+    .default({ trustedProxyHops: 0 }),
 });
 
 export const AppConfig = AppConfigShape.refine(

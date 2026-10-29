@@ -28,6 +28,28 @@ describe("parseAppConfig", () => {
     expect(parseAppConfig(validConfig).cors.allowedOrigins).toEqual([]);
   });
 
+  it("trusts no proxy by default", () => {
+    expect(parseAppConfig(validConfig).securityEvents.trustedProxyHops).toBe(0);
+  });
+
+  it("reads the number of trusted proxies", () => {
+    const config = parseAppConfig({
+      ...validConfig,
+      securityEvents: { trustedProxyHops: 2 },
+    });
+
+    expect(config.securityEvents.trustedProxyHops).toBe(2);
+  });
+
+  it.each([-1, 1.5, "1"])("rejects %j trusted proxies", (hops) => {
+    expect(() =>
+      parseAppConfig({
+        ...validConfig,
+        securityEvents: { trustedProxyHops: hops },
+      }),
+    ).toThrow(ConfigError);
+  });
+
   it("enables the interactive documentation by default", () => {
     expect(parseAppConfig(validConfig).docs.enabled).toBe(true);
   });
