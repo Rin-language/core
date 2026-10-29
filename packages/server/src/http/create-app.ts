@@ -9,6 +9,12 @@ import type { Clock } from "../ports/clock.js";
 import type { Identity } from "../ports/identity.js";
 import { ApiProblem, STATUS_BY_CODE } from "./api-problem.js";
 import { cors } from "./cors.js";
+import {
+  type DocsAssets,
+  docsSecurityHeaders,
+  isDocsPath,
+  mountDocs,
+} from "./docs.js";
 import type { Route } from "./route.js";
 
 export interface AppOptions {
@@ -19,6 +25,8 @@ export interface AppOptions {
   maxBodyBytes: number;
   /** Closed by default: no origin may read the API from a browser. */
   allowedOrigins?: readonly string[];
+  /** Absent means the interactive documentation is not served. */
+  docs?: DocsAssets;
 }
 
 interface AppEnv {
@@ -102,16 +110,19 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
     );
   });
 
-  app.use(
-    secureHeaders({
-      contentSecurityPolicy: {
-        defaultSrc: ["'none'"],
-        frameAncestors: ["'none'"],
-      },
-      referrerPolicy: "no-referrer",
-      // TLS and HSTS belong to the reverse proxy that terminates it.
-      strictTransportSecurity: false,
-    }),
+  const apiSecurityHeaders = secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+    referrerPolicy: "no-referrer",
+    // TLS and HSTS belong to the reverse proxy that terminates it.
+    strictTransportSecurity: false,
+  });
+  app.use((context, next) =>
+    options.docs !== undefined && isDocsPath(context.req.path)
+      ? docsSecurityHeaders(context, next)
+      : apiSecurityHeaders(context, next),
   );
   app.use(async (context, next) => {
     context.header("Cache-Control", "no-store");
@@ -170,6 +181,8 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
       );
     });
   }
+
+  if (options.docs !== undefined) mountDocs(app, options.docs);
 
   const document = buildOpenApiDocument(routes);
   app.get(OPENAPI_ROUTE.path, (context) => {

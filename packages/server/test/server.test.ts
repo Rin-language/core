@@ -122,6 +122,32 @@ describe("startServer", () => {
     );
   });
 
+  it("serves the interactive documentation with its own viewer script", async () => {
+    const { url } = await start();
+
+    const [page, script] = await Promise.all([
+      fetch(`${url}/docs`),
+      fetch(`${url}/docs/scalar.js`),
+    ]);
+
+    expect([
+      page.status,
+      script.status,
+      (await script.text()).length > 1000,
+    ]).toEqual([200, 200, true]);
+  });
+
+  it("does not serve the documentation when the configuration disables it", async () => {
+    const { url } = await start({ docs: { enabled: false } });
+
+    const [page, script] = await Promise.all([
+      fetch(`${url}/docs`),
+      fetch(`${url}/docs/scalar.js`),
+    ]);
+
+    expect([page.status, script.status]).toEqual([404, 404]);
+  });
+
   it("stops accepting connections once closed", async () => {
     const { server, url } = await start();
 

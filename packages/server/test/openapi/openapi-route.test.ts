@@ -5,6 +5,7 @@ import { FixedClock, findRouteDrift } from "@rin-language/core-test-kit";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/config/load-config.js";
 import { createApp } from "../../src/http/create-app.js";
+import { DOCS_ENDPOINTS } from "../../src/http/docs.js";
 import { buildOpenApiDocument } from "../../src/openapi/build-openapi-document.js";
 import { buildCoreRoutes } from "../../src/routes/core-routes.js";
 import {
@@ -88,10 +89,13 @@ describe("GET /v1/openapi.json", () => {
 });
 
 describe("drift between the mounted routes and the document", () => {
-  const drift = async (target: typeof app) => {
+  const drift = async (target: typeof app, ignore: readonly string[] = []) => {
     const response = await target.request("/v1/openapi.json");
-    return findRouteDrift(target.routes, JSON.parse(await response.text()));
+    return findRouteDrift(target.routes, JSON.parse(await response.text()), {
+      ignore,
+    });
   };
+  const withDocs = () => createApp({ ...options, docs: { script: "" } });
 
   it("finds none in the core application", async () => {
     expect(await drift(app)).toEqual({ undocumented: [], unmounted: [] });
@@ -109,5 +113,16 @@ describe("drift between the mounted routes and the document", () => {
     rogue.get("/v1/rogue", (context) => context.json({}));
 
     expect((await drift(rogue)).undocumented).toEqual(["GET /v1/rogue"]);
+  });
+
+  it("finds none once the documentation routes are declared as not part of the API", async () => {
+    expect(await drift(withDocs(), DOCS_ENDPOINTS)).toEqual({
+      undocumented: [],
+      unmounted: [],
+    });
+  });
+
+  it("reports the documentation routes when they are not declared", async () => {
+    expect((await drift(withDocs())).undocumented).toEqual(DOCS_ENDPOINTS);
   });
 });

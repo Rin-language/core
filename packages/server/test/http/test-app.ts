@@ -28,7 +28,11 @@ export interface Captured {
 }
 
 export function createTestApp(
-  options: { identity?: Identity; allowedOrigins?: readonly string[] } = {},
+  options: {
+    identity?: Identity;
+    allowedOrigins?: readonly string[];
+    docs?: { script: string };
+  } = {},
 ) {
   const logs = createTestLogs();
   const captured: Captured = { userIds: [], texts: [] };
@@ -103,6 +107,7 @@ export function createTestApp(
     ...(options.allowedOrigins === undefined
       ? {}
       : { allowedOrigins: options.allowedOrigins }),
+    ...(options.docs === undefined ? {} : { docs: options.docs }),
   });
   return { app, logs, captured, routes };
 }

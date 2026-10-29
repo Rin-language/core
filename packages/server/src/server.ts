@@ -4,6 +4,7 @@ import type { DestinationStream } from "pino";
 import type { Env } from "./config/env.js";
 import { loadConfig } from "./config/load-config.js";
 import { createApp } from "./http/create-app.js";
+import { loadDocsAssets } from "./http/docs-assets.js";
 import { NoIdentity } from "./identity/no-identity.js";
 import { createLogger } from "./observability/logger.js";
 import { buildCoreRoutes } from "./routes/core-routes.js";
@@ -39,6 +40,7 @@ export async function startServer(
     logger,
     maxBodyBytes: config.app.maxBodyBytes,
     allowedOrigins: config.app.cors.allowedOrigins,
+    ...(config.app.docs.enabled ? { docs: loadDocsAssets() } : {}),
   });
 
   let http: Server;
