@@ -33,10 +33,15 @@ const AppConfigShape = z.strictObject({
   limits: LimitsResponse,
   maxBodyBytes: z.number().int().positive(),
   // Slow-request protection: a client has this long to send its headers and its whole request.
-  timeouts: z.strictObject({
-    headersMs: z.number().int().positive(),
-    requestMs: z.number().int().positive(),
-  }),
+  timeouts: z
+    .strictObject({
+      headersMs: z.number().int().positive(),
+      requestMs: z.number().int().positive(),
+    })
+    // Node refuses a headers timeout longer than the whole-request timeout.
+    .refine((timeouts) => timeouts.headersMs <= timeouts.requestMs, {
+      message: "headersMs must not exceed requestMs",
+    }),
   cors: z
     .strictObject({ allowedOrigins: z.array(AllowedOrigin) })
     .default({ allowedOrigins: [] }),

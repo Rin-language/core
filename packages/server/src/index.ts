@@ -1,3 +1,8 @@
+export type { LoadedConfig } from "./config/load-config.js";
+export { loadConfig } from "./config/load-config.js";
+export { createApp } from "./http/create-app.js";
+export type { Route } from "./http/route.js";
+export { defineRoute } from "./http/route.js";
 export type { Clock } from "./ports/clock.js";
 export type { AuthenticatedUser, Identity, UserId } from "./ports/identity.js";
 export type {
@@ -10,3 +15,5 @@ export type {
   StoredUserProfile,
   UserProfileStore,
 } from "./ports/storage.js";
+export { buildCoreRoutes } from "./routes/core-routes.js";
+export { startServer } from "./server.js";

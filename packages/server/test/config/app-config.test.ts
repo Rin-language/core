@@ -84,6 +84,15 @@ describe("parseAppConfig", () => {
     ).toThrow(ConfigError);
   });
 
+  it("rejects a headers timeout longer than the request timeout", () => {
+    expect(() =>
+      parseAppConfig({
+        ...validConfig,
+        timeouts: { headersMs: 40000, requestMs: 30000 },
+      }),
+    ).toThrow(ConfigError);
+  });
+
   it("rejects a non-positive body size limit", () => {
     expect(() => parseAppConfig({ ...validConfig, maxBodyBytes: 0 })).toThrow(
       ConfigError,
