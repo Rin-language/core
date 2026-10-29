@@ -4,8 +4,8 @@
   "files": {
     "includes": [
       "**",
-      "!dist",
-      "!node_modules",
+      "!**/dist",
+      "!**/node_modules",
       "!data",
       "!pnpm-lock.yaml",
       "!**/*.md"

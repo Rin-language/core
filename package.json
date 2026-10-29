@@ -10,7 +10,7 @@
     "test": "vitest run",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p packages/web",
     "dev": "tsx packages/server/src/main.ts"
   },
   "devDependencies": {
