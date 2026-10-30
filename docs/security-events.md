@@ -4,7 +4,17 @@ Core can tell a receiver what it saw of every API request, without telling it wh
 
 Without a receiver nothing is measured, queued or built, so a server that does not use this pays nothing.
 
-## What an event holds
+## Event types
+
+| `type` | Emitted | Holds |
+|---|---|---|
+| `request` | Once per API request, when its response is ready. | See below. |
+| `ai_call` | Once per call to a model through the [AI gateway](ai-gateway.md), whatever its outcome. | The user, the language, the prompt id and version, the status (`ok`, `input_rejected`, `provider_error`, `timeout`, `invalid_output`), the number of attempts, the duration in milliseconds and the input and output tokens summed over the attempts. |
+| `events_dropped` | When the receiver was too slow and events were lost. | How many, and since when. |
+
+An `ai_call` event carries **no** prompt, variable, text, model output or error message; the prompt id and version are configuration, not content. A burst of `invalid_output` or `input_rejected` statuses for one user is the signal to look at.
+
+## What a `request` event holds
 
 One `request` event per API request, once its response is ready: the time, the request id, the method, the route pattern (never the path sent), the status, the duration, the bytes of body read and sent, a coarse client kind (`browser`, `script`, `declared_bot` or `none`), and when they exist the user, the `ApiError` code and a fingerprint of the caller's network. The exact fields and their meaning are the types in [`packages/server/src/ports/security-events.ts`](../packages/server/src/ports/security-events.ts).
 
