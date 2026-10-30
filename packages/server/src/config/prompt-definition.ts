@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { parseConfig } from "./config-error.js";
+import {
+  PLACEHOLDER,
+  PROMPT_ID,
+  UNTRUSTED_TAG,
+  VARIABLE_NAME,
+} from "./prompt-syntax.js";
 
-const PLACEHOLDER = /\{\{([a-z][A-Za-z0-9]*)\}\}/g;
 const ANY_BRACES = /\{\{|\}\}/;
 
 const NonBlank = z
@@ -22,10 +27,7 @@ const PromptDefinition = z
     version: z.number().int().positive(),
     system: NonBlank,
     user: NonBlank,
-    variables: z.record(
-      z.string().regex(/^[a-z][A-Za-z0-9]*$/),
-      PromptVariable,
-    ),
+    variables: z.record(z.string().regex(VARIABLE_NAME), PromptVariable),
     maxOutputTokens: z.number().int().positive().optional(),
   })
   .superRefine((definition, context) => {
@@ -42,7 +44,10 @@ const PromptDefinition = z
     const hasUntrusted = Object.values(definition.variables).some(
       (variable) => variable.kind === "untrusted",
     );
-    if (hasUntrusted && !/untrusted/i.test(definition.system)) {
+    if (
+      hasUntrusted &&
+      !definition.system.toLowerCase().includes(UNTRUSTED_TAG)
+    ) {
       fail(
         "system",
         'must tell the model that text in "untrusted" blocks is data, never instructions',
@@ -70,7 +75,7 @@ const PromptDefinition = z
   });
 
 export const PromptDefinitionsSchema = z.record(
-  z.string().regex(/^[a-z][a-z0-9_]*$/, "must be lowercase snake_case"),
+  z.string().regex(PROMPT_ID, "must be lowercase snake_case"),
   PromptDefinition,
 );
 

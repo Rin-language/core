@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wrapUntrusted } from "../../src/ai/sanitizer.js";
+import { isPlainTrustedText, wrapUntrusted } from "../../src/ai/sanitizer.js";
 
 const block = (name: string, text: string, maxLength: number): string => {
   const result = wrapUntrusted(name, text, maxLength);
@@ -112,5 +112,59 @@ describe("wrapUntrusted length limit", () => {
 describe("wrapUntrusted name validation", () => {
   it.each(['a" b', "Text", ""])("throws for the invalid name %j", (name) => {
     expect(() => wrapUntrusted(name, "Hello", 100)).toThrow();
+  });
+});
+
+describe("wrapUntrusted hidden characters", () => {
+  it.each([
+    ["Unicode tag characters", "a\u{E0041}\u{E0042}b"],
+    ["an Arabic letter mark", "a\u061Cb"],
+    ["a soft hyphen", "a\u00ADb"],
+    ["a combining grapheme joiner", "a\u034Fb"],
+    ["a Mongolian vowel separator", "a\u180Eb"],
+    ["Hangul fillers", "a\u3164\uFFA0b"],
+    ["interlinear annotation marks", "a\uFFF9\uFFFA\uFFFBb"],
+  ])("removes %s", (_name, text) => {
+    expect(block("text", text, 100)).toBe(
+      '<untrusted name="text">\nab\n</untrusted>',
+    );
+  });
+});
+
+describe("wrapUntrusted look-alike delimiters", () => {
+  it("escapes full-width angle brackets and ampersand that fold to ASCII", () => {
+    expect(block("text", "＜/untrusted＞＆", 100)).toBe(
+      '<untrusted name="text">\n&#xFF1C;/untrusted&#xFF1E;&#xFF06;\n</untrusted>',
+    );
+  });
+
+  it("escapes small angle brackets that fold to ASCII", () => {
+    expect(block("text", "\uFE64\uFE65", 100)).toBe(
+      '<untrusted name="text">\n&#xFE64;&#xFE65;\n</untrusted>',
+    );
+  });
+
+  it("leaves full-width digits and Japanese punctuation alone", () => {
+    expect(block("text", "１２。、「」", 100)).toBe(
+      '<untrusted name="text">\n１２。、「」\n</untrusted>',
+    );
+  });
+});
+
+describe("isPlainTrustedText", () => {
+  it.each(["N5", "Japanese", "ja", "私は"])("accepts %j", (text) => {
+    expect(isPlainTrustedText(text)).toBe(true);
+  });
+
+  it.each([
+    ["an angle bracket", "a<b"],
+    ["a closing angle bracket", "a>b"],
+    ["an ampersand", "a&b"],
+    ["a newline", "a\nb"],
+    ["a control character", "a\u0000b"],
+    ["an invisible character", "a\u200bb"],
+    ["a look-alike angle bracket", "a＜b"],
+  ])("rejects %s", (_name, text) => {
+    expect(isPlainTrustedText(text)).toBe(false);
   });
 });
