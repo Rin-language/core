@@ -13,7 +13,10 @@ if [ "$#" -eq 0 ]; then set -- pnpm test; fi
 
 user_id=$(id -u)
 group_id=$(id -g)
-exec sudo env "PATH=$PATH" "HOME=$HOME" unshare --net -- sh -c '
+# Root (a container) needs no sudo.
+if [ "$user_id" -eq 0 ]; then as_root=""; else as_root="sudo"; fi
+# shellcheck disable=SC2086
+exec $as_root env "PATH=$PATH" "HOME=$HOME" unshare --net -- sh -c '
   set -eu
   user_id=$1; group_id=$2; shift 2
   ip link set lo up
