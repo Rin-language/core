@@ -103,6 +103,7 @@ describe("startServer", () => {
       const { server } = await start({
         docs: { enabled: true },
         timeouts: { headersMs: 1000, requestMs: 2000, idleMs: 300 },
+        ai: { timeoutMs: 100, idleMarginMs: 100 },
       });
 
       const closedAfterMs = await new Promise<number>((resolve) => {
@@ -121,6 +122,12 @@ describe("startServer", () => {
       expect(closedAfterMs).toBeLessThan(3000);
     },
   );
+
+  it("refuses to start when the idle timeout would cut a slow AI call", async () => {
+    await expect(
+      start({ timeouts: { headersMs: 1000, requestMs: 2000, idleMs: 10000 } }),
+    ).rejects.toThrow(/timeouts\.idleMs.*ai\.timeoutMs/s);
+  });
 
   it("applies the idle timeout of the configuration", async () => {
     const { server } = await start();

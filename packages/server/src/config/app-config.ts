@@ -59,6 +59,31 @@ const AppConfigShape = z.strictObject({
     .default({ allowedOrigins: [] }),
   // Closed by default: the viewer is a large third-party bundle. See docs/interactive-docs.md.
   docs: z.strictObject({ enabled: z.boolean() }).default({ enabled: false }),
+  // Every limit on a model call lives here; the gateway reads nothing else.
+  ai: z
+    .strictObject({
+      // Total time one call may take, all attempts included. The connection
+      // stays silent that long, so `timeouts.idleMs` must outlast it.
+      timeoutMs: z.number().int().positive().default(20000),
+      // Calls to the provider per request, the first one included.
+      maxAttempts: z.number().int().min(1).max(5).default(2),
+      // Characters of all variables of a prompt together.
+      maxInputChars: z.number().int().positive().default(8000),
+      // Ceiling of what a prompt may ask the provider to produce.
+      maxOutputTokens: z.number().int().positive().default(1024),
+      // Longest model answer that is even looked at.
+      maxOutputChars: z.number().int().positive().default(16000),
+      // Room kept between the AI deadline and the idle timeout.
+      idleMarginMs: z.number().int().nonnegative().default(5000),
+    })
+    .default(() => ({
+      timeoutMs: 20000,
+      maxAttempts: 2,
+      maxInputChars: 8000,
+      maxOutputTokens: 1024,
+      maxOutputChars: 16000,
+      idleMarginMs: 5000,
+    })),
   securityEvents: z
     .strictObject({
       // Proxies we run or trust in front of the server, such as a CDN and a PaaS
@@ -90,6 +115,14 @@ export const AppConfig = AppConfigShape.refine(
   {
     message: "defaultLanguage must be one of languages",
     path: ["defaultLanguage"],
+  },
+).refine(
+  (config) =>
+    config.timeouts.idleMs >= config.ai.timeoutMs + config.ai.idleMarginMs,
+  {
+    message:
+      "timeouts.idleMs must be at least ai.timeoutMs + ai.idleMarginMs, or the connection is closed while the model is still working",
+    path: ["timeouts", "idleMs"],
   },
 );
 export type AppConfig = z.output<typeof AppConfig>;
