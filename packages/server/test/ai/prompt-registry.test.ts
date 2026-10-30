@@ -72,3 +72,18 @@ describe("PromptRegistry.assertAvailable", () => {
     expect(() => registry.assertAvailable([])).not.toThrow();
   });
 });
+
+describe("PromptRegistry.get with names of Object.prototype", () => {
+  it.each([
+    ["constructor", "correction"],
+    ["__proto__", "correction"],
+    ["ja", "constructor"],
+    ["ja", "__proto__"],
+    ["ja", "toString"],
+  ])("finds no prompt for %s / %s", (language, id) => {
+    expect(registry.get(language, id, 1)).toEqual({
+      ok: false,
+      error: { kind: "unknown_prompt" },
+    });
+  });
+});

@@ -1,6 +1,11 @@
-import type { z } from "zod";
+import { z } from "zod";
 import type { AppConfig } from "../config/app-config.js";
 import type { PromptDefinition } from "../config/prompt-definition.js";
+import {
+  LANGUAGE_CODE,
+  PLACEHOLDER,
+  PROMPT_ID,
+} from "../config/prompt-syntax.js";
 import type { Logger } from "../observability/logger.js";
 import type { Clock } from "../ports/clock.js";
 import type { UserId } from "../ports/identity.js";
@@ -9,7 +14,7 @@ import type { AiCallEvent, AiCallStatus } from "../ports/security-events.js";
 import type { UsageMeter } from "../ports/usage-meter.js";
 import { type OutputError, parseModelOutput } from "./output-extractor.js";
 import type { PromptRegistry } from "./prompt-registry.js";
-import { wrapUntrusted } from "./sanitizer.js";
+import { isPlainTrustedText, wrapUntrusted } from "./sanitizer.js";
 
 export type AiSettings = AppConfig["ai"];
 
@@ -56,7 +61,21 @@ export interface AiGatewayOptions {
   publishEvent?: (event: AiCallEvent) => void;
 }
 
-const PLACEHOLDER = /\{\{([a-z][A-Za-z0-9]*)\}\}/g;
+/** No real call reports more than this; a larger figure is a bug or an attack. */
+const MAX_REPORTED_TOKENS = 1_000_000_000;
+
+const ProviderAnswer = z.object({
+  text: z.string(),
+  // NaN is a number a provider can send: counted as zero, not a failed call.
+  usage: z.object({
+    inputTokens: z.number().or(z.nan()),
+    outputTokens: z.number().or(z.nan()),
+  }),
+});
+
+class InvalidProviderAnswer extends Error {}
+
+const INVALID_LABEL = "invalid";
 
 const codePointCount = (text: string): number => Array.from(text).length;
 
@@ -65,7 +84,13 @@ const errorName = (error: unknown): string =>
 
 /** A provider's figure is untrusted too: anything odd counts as zero. */
 const asAmount = (value: number): number =>
-  Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  Number.isSafeInteger(value) && value >= 0 && value <= MAX_REPORTED_TOKENS
+    ? value
+    : 0;
+
+/** Labels in an event are configuration; anything else could be user content. */
+const labelOf = (value: string, pattern: RegExp): string =>
+  pattern.test(value) ? value : INVALID_LABEL;
 
 class DeadlineExceeded extends Error {}
 
@@ -108,6 +133,9 @@ function buildPrompt(
   let total = 0;
   for (const [name, definition] of Object.entries(prompt.variables)) {
     const value = variables[name] ?? "";
+    if (definition.kind === "trusted" && !isPlainTrustedText(value)) {
+      return { ok: false, kind: "invalid_variables" };
+    }
     const length = codePointCount(value);
     total += length;
     if (length > definition.maxLength) {
@@ -175,8 +203,8 @@ export function createAiGateway(options: AiGatewayOptions): AiGateway {
           type: "ai_call",
           occurredAt: endedAt.toISOString(),
           userId: request.userId,
-          language: request.language,
-          promptId: request.promptId,
+          language: labelOf(request.language, LANGUAGE_CODE),
+          promptId: labelOf(request.promptId, PROMPT_ID),
           promptVersion: request.promptVersion,
           status,
           attempts,
@@ -215,7 +243,7 @@ export function createAiGateway(options: AiGatewayOptions): AiGateway {
         attempts += 1;
         let answer: LlmResponse;
         try {
-          answer = await beforeDeadline(
+          const reply = await beforeDeadline(
             provider.generate({
               system: built.system,
               user: built.user,
@@ -224,6 +252,10 @@ export function createAiGateway(options: AiGatewayOptions): AiGateway {
             }),
             deadline,
           );
+          // The reply is untrusted too: a shape the port does not promise is a failure.
+          const checked = ProviderAnswer.safeParse(reply);
+          if (!checked.success) throw new InvalidProviderAnswer();
+          answer = checked.data;
         } catch (error) {
           await recordUsage(request.userId, request, undefined);
           if (deadline.aborted) {

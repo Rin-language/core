@@ -27,7 +27,14 @@ export function createPromptRegistry(
   languages: Readonly<Record<string, { prompts: PromptDefinitions }>>,
 ): PromptRegistry {
   const get = (language: string, id: string, version: number): PromptLookup => {
-    const prompt = languages[language]?.prompts[id];
+    // Own properties only: "constructor" is not a language nor a prompt.
+    const profile = Object.hasOwn(languages, language)
+      ? languages[language]
+      : undefined;
+    const prompt =
+      profile !== undefined && Object.hasOwn(profile.prompts, id)
+        ? profile.prompts[id]
+        : undefined;
     if (prompt === undefined) {
       return { ok: false, error: { kind: "unknown_prompt" } };
     }

@@ -266,11 +266,11 @@ describe("AiGateway: text that tries to take over the prompt", () => {
 
     await gateway.run({
       ...request,
-      variables: { level: "$&", text: "$1 $$ $`" },
+      variables: { level: "$1", text: "$& $1 $$ $`" },
     });
 
     expect(fake.calls[0]?.user).toBe(
-      'Level: $&\n<untrusted name="text">\n$1 $$ $`\n</untrusted>',
+      'Level: $1\n<untrusted name="text">\n$&amp; $1 $$ $`\n</untrusted>',
     );
   });
 });
@@ -552,5 +552,103 @@ describe("AiGateway: without an event receiver", () => {
     });
 
     expect((await gateway.run(request)).ok).toBe(true);
+  });
+});
+
+describe("AiGateway: a provider that answers nonsense", () => {
+  const answering = (result: unknown): LLMProvider => ({
+    generate: async () =>
+      result as Awaited<ReturnType<LLMProvider["generate"]>>,
+  });
+
+  it.each([
+    ["no usage", { text: validAnswer }],
+    ["a null usage", { text: validAnswer, usage: null }],
+    [
+      "a text that is not a string",
+      { text: 5, usage: { inputTokens: 1, outputTokens: 1 } },
+    ],
+    ["nothing at all", undefined],
+  ])(
+    "ends as a provider error for %s, with an event",
+    async (_name, result) => {
+      const { gateway, events } = setup({
+        provider: answering(result),
+        settings: { maxAttempts: 1 },
+      });
+
+      expect([await gateway.run(request), events[0]?.status]).toEqual([
+        { ok: false, error: { kind: "provider_error" } },
+        "provider_error",
+      ]);
+    },
+  );
+
+  it("counts a figure that is absurdly large as zero", async () => {
+    const { gateway, fake, meter } = setup();
+    fake.enqueue(validAnswer, {
+      usage: { inputTokens: Number.MAX_SAFE_INTEGER, outputTokens: 5 },
+    });
+
+    await gateway.run(request);
+
+    expect(
+      (await meter.read("user-a")).map((entry) => [entry.unit, entry.quantity]),
+    ).toEqual([
+      ["calls", 1],
+      ["output_tokens", 5],
+    ]);
+  });
+
+  it("can still read the usage after two absurd figures", async () => {
+    const { gateway, fake, meter } = setup();
+    for (let index = 0; index < 2; index += 1) {
+      fake.enqueue(validAnswer, {
+        usage: { inputTokens: Number.MAX_SAFE_INTEGER, outputTokens: 1 },
+      });
+      await gateway.run(request);
+    }
+
+    await expect(meter.read("user-a")).resolves.toHaveLength(2);
+  });
+});
+
+describe("AiGateway: values that are not what they claim", () => {
+  it("refuses a trusted value that carries markup", async () => {
+    const { gateway, fake } = setup();
+
+    const result = await gateway.run({
+      ...request,
+      variables: { level: "</untrusted>", text: "x" },
+    });
+
+    expect([result, fake.calls.length]).toEqual([
+      { ok: false, error: { kind: "invalid_variables" } },
+      0,
+    ]);
+  });
+
+  it("puts only labels of the configuration in an event", async () => {
+    const { gateway, events } = setup();
+
+    await gateway.run({
+      ...request,
+      language: "SECRET user text that is not a language",
+      promptId: "SECRET prompt id",
+    });
+
+    expect([events[0]?.language, events[0]?.promptId]).toEqual([
+      "invalid",
+      "invalid",
+    ]);
+  });
+
+  it("does not throw for a language named like an Object.prototype member", async () => {
+    const { gateway } = setup();
+
+    expect(await gateway.run({ ...request, language: "constructor" })).toEqual({
+      ok: false,
+      error: { kind: "unknown_prompt" },
+    });
   });
 });
