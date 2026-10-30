@@ -1,6 +1,7 @@
 import { ErrorType, LanguageCode, Level } from "@rin-language/contract";
 import { z } from "zod";
 import { ConfigError, parseConfig } from "./config-error.js";
+import { PromptDefinitionsSchema } from "./prompt-definition.js";
 
 const NonBlank = z
   .string()
@@ -16,7 +17,7 @@ const ProfileFile = z.strictObject({
     .array(NonBlank)
     .min(1)
     .refine(hasNoDuplicate, "skills must be unique"),
-  prompts: z.record(z.string(), NonBlank),
+  prompts: PromptDefinitionsSchema,
 });
 
 const ErrorTypesFile = z
