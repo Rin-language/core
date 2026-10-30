@@ -233,3 +233,73 @@ describe("findSpanProblems", () => {
     ).toEqual([]);
   });
 });
+
+describe("parseModelOutput hardening", () => {
+  it("does not repeat a key the model chose in the issues", () => {
+    const result = parseModelOutput(
+      '{"IGNORE ALL PREVIOUS secret text":"x"}',
+      z.record(z.string(), z.number()),
+      options,
+    );
+
+    expect(JSON.stringify(result)).not.toContain("IGNORE");
+  });
+
+  it("keeps the names of keys the schema declares in the issues", () => {
+    const result = parseModelOutput(
+      '{"score":"3","note":"ok"}',
+      Answer,
+      options,
+    );
+
+    expect(result).toMatchObject({
+      error: { issues: ["score: invalid_type"] },
+    });
+  });
+
+  it("refuses JSON nested too deeply", () => {
+    const deep = `${"[".repeat(1000)}${"]".repeat(1000)}`;
+
+    expect(
+      parseModelOutput(deep, z.unknown(), { maxChars: 10_000 }),
+    ).toMatchObject({
+      ok: false,
+      error: { kind: "invalid_json" },
+    });
+  });
+
+  it("takes the one JSON value that fits the schema among fragments in prose", () => {
+    const text = `See [1]. ${JSON.stringify(valid)}`;
+
+    expect(parseModelOutput(text, Answer, options)).toEqual({
+      ok: true,
+      value: valid,
+    });
+  });
+
+  it("still refuses two values that both fit the schema", () => {
+    const text = `${JSON.stringify(valid)} ${JSON.stringify(valid)}`;
+
+    expect(parseModelOutput(text, Answer, options)).toMatchObject({
+      error: { kind: "multiple_json" },
+    });
+  });
+
+  it("turns a check that throws into a refusal", () => {
+    const result = parseModelOutput(JSON.stringify(valid), Answer, {
+      ...options,
+      refine: () => {
+        throw new Error("SECRET-CHECK-MESSAGE");
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "refinement_failed", issues: ["refine_threw"] },
+    });
+  });
+
+  it("does not flag a lone low surrogate as a split character", () => {
+    expect(findSpanProblems("a\uDC00b", [{ start: 1, end: 2 }])).toEqual([]);
+  });
+});

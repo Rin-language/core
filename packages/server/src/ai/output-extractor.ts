@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 
 export type OutputErrorKind =
   | "too_long"
@@ -37,6 +37,9 @@ const fail = (kind: OutputErrorKind, issues: string[] = []) => ({
   error: { kind, issues },
 });
 
+/** Deeper nesting is refused: it can only be a trap for the code that reads the value later. */
+const MAX_JSON_DEPTH = 64;
+
 /** Index of the bracket that closes the one at `start`, or -1 when none does. */
 function findClosingIndex(text: string, start: number): number {
   let depth = 0;
@@ -52,6 +55,7 @@ function findClosingIndex(text: string, start: number): number {
       isInString = true;
     } else if (character === "{" || character === "[") {
       depth += 1;
+      if (depth > MAX_JSON_DEPTH) return -1;
     } else if (character === "}" || character === "]") {
       depth -= 1;
       if (depth === 0) return index;
@@ -61,13 +65,14 @@ function findClosingIndex(text: string, start: number): number {
 }
 
 type Extraction =
-  | { kind: "found"; value: unknown }
-  | { kind: "none" | "invalid_json" | "multiple_json" };
+  | { kind: "values"; values: unknown[] }
+  | { kind: "none" }
+  | { kind: "invalid_json" };
 
 /**
- * Finds the one JSON object or array in a text that may hold prose or a code
- * fence around it. Nothing is repaired: a truncated value, or two values, is
- * an error rather than a guess.
+ * Finds the JSON objects and arrays in a text that may hold prose or a code
+ * fence around them. Nothing is repaired: a value that never closes is an
+ * error rather than a guess.
  */
 function extractJson(text: string): Extraction {
   const values: unknown[] = [];
@@ -88,14 +93,72 @@ function extractJson(text: string): Extraction {
     }
     index = closing + 1;
   }
-  if (values.length > 1) return { kind: "multiple_json" };
-  const [value] = values;
-  if (values.length === 1) return { kind: "found", value };
+  if (values.length > 0) return { kind: "values", values };
   return { kind: hasInvalidCandidate ? "invalid_json" : "none" };
 }
 
-const describeIssue = (issue: z.core.$ZodIssue): string =>
-  `${issue.path.map(String).join(".") || "(root)"}: ${issue.code}`;
+/** Every key a schema declares, read from its JSON Schema form. */
+function declaredKeys(schema: z.ZodType): Set<string> {
+  const keys = new Set<string>();
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (node === null || typeof node !== "object") return;
+    for (const [key, child] of Object.entries(node)) {
+      if (key === "properties" && child !== null && typeof child === "object") {
+        for (const name of Object.keys(child)) keys.add(name);
+      }
+      visit(child);
+    }
+  };
+  try {
+    visit(z.toJSONSchema(schema, { unrepresentable: "any" }));
+  } catch {
+    // A schema with no JSON Schema form: no key is known, all are hidden.
+  }
+  return keys;
+}
+
+const UNKNOWN_KEY = "<key>";
+
+/** Names where and why. A key the model chose is never repeated. */
+function describeIssue(
+  issue: z.core.$ZodIssue,
+  knownKeys: ReadonlySet<string>,
+): string {
+  const path = issue.path.map((segment) =>
+    typeof segment === "string" && !knownKeys.has(segment)
+      ? UNKNOWN_KEY
+      : String(segment),
+  );
+  return `${path.join(".") || "(root)"}: ${issue.code}`;
+}
+
+/** The only value that fits the schema among several, if there is exactly one. */
+function pickFittingValue<T>(
+  values: readonly unknown[],
+  schema: z.ZodType<T>,
+): { kind: "single"; value: unknown } | { kind: "multiple_json" } {
+  if (values.length === 1) return { kind: "single", value: values[0] };
+  const fitting = values.filter((value) => schema.safeParse(value).success);
+  return fitting.length === 1
+    ? { kind: "single", value: fitting[0] }
+    : { kind: "multiple_json" };
+}
+
+/** A check that throws is a refusal too: the answer is not trusted either way. */
+function runRefine<T>(
+  refine: ((value: T) => string[]) | undefined,
+  value: T,
+): string[] {
+  try {
+    return refine?.(value) ?? [];
+  } catch {
+    return ["refine_threw"];
+  }
+}
 
 export function parseModelOutput<T>(
   text: string,
@@ -105,13 +168,19 @@ export function parseModelOutput<T>(
   if (text.length > options.maxChars) return fail("too_long");
   const extraction = extractJson(text);
   if (extraction.kind === "none") return fail("no_json");
-  if (extraction.kind !== "found") return fail(extraction.kind);
+  if (extraction.kind === "invalid_json") return fail("invalid_json");
+  const picked = pickFittingValue(extraction.values, schema);
+  if (picked.kind === "multiple_json") return fail("multiple_json");
 
-  const parsed = schema.safeParse(extraction.value);
+  const parsed = schema.safeParse(picked.value);
   if (!parsed.success) {
-    return fail("schema_mismatch", parsed.error.issues.map(describeIssue));
+    const knownKeys = declaredKeys(schema);
+    return fail(
+      "schema_mismatch",
+      parsed.error.issues.map((issue) => describeIssue(issue, knownKeys)),
+    );
   }
-  const problems = options.refine?.(parsed.data) ?? [];
+  const problems = runRefine(options.refine, parsed.data);
   if (problems.length > 0) return fail("refinement_failed", problems);
   return { ok: true, value: parsed.data };
 }
@@ -121,13 +190,17 @@ export interface Span {
   end: number;
 }
 
-const isLowSurrogate = (code: number): boolean =>
-  code >= 0xdc00 && code <= 0xdfff;
+const HIGH_SURROGATES = [0xd800, 0xdbff] as const;
+const LOW_SURROGATES = [0xdc00, 0xdfff] as const;
+
+const isWithin = (code: number, [first, last]: readonly [number, number]) =>
+  code >= first && code <= last;
 
 const isInsideSurrogatePair = (text: string, position: number): boolean =>
   position > 0 &&
   position < text.length &&
-  isLowSurrogate(text.charCodeAt(position));
+  isWithin(text.charCodeAt(position - 1), HIGH_SURROGATES) &&
+  isWithin(text.charCodeAt(position), LOW_SURROGATES);
 
 function findProblemOfSpan(original: string, span: Span): string | undefined {
   const { start, end } = span;
