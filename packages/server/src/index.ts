@@ -23,6 +23,9 @@ export type {
 export type {
   Storage,
   StoredUserProfile,
+  UsageEntry,
+  UsageRange,
+  UsageStore,
   UserProfileStore,
 } from "./ports/storage.js";
 export { buildCoreRoutes } from "./routes/core-routes.js";
