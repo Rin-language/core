@@ -46,18 +46,40 @@ function stepLines(lines, index) {
 function runProblems(lines) {
   const problems = [];
   lines.forEach((line, index) => {
-    const match = /^(\s*)(- )?run:\s*(.*)$/.exec(line);
+    const match = /^(\s*)(- )?(run|script):\s*(.*)$/.exec(line);
     if (match === null) return;
     const keyIndent =
       (match[1]?.length ?? 0) + (match[2] === undefined ? 0 : 2);
-    const body = [match[3] ?? ""];
+    const body = [match[4] ?? ""];
     for (const next of lines.slice(index + 1)) {
       if (!isBlank(next) && indentOf(next) <= keyIndent) break;
       body.push(next);
     }
     if (body.some((text) => text.includes("${{"))) {
       problems.push(
-        `line ${index + 1}: an expression \${{ }} inside run is a script injection; pass it through env`,
+        `line ${index + 1}: an expression \${{ }} inside ${match[3]} is a script injection; pass it through env`,
+      );
+    }
+  });
+  return problems;
+}
+
+// A comment must never satisfy or hide a rule.
+const withoutComment = (line) => line.replace(/(^|\s)#.*$/, "$1");
+
+function timeoutProblems(lines) {
+  const problems = [];
+  const jobsAt = lines.findIndex((line) => /^jobs:\s*$/.test(line));
+  if (jobsAt === -1) return problems;
+  const starts = [];
+  lines.forEach((line, index) => {
+    if (index > jobsAt && /^ {2}[\w-]+:\s*$/.test(line)) starts.push(index);
+  });
+  starts.forEach((start, position) => {
+    const block = lines.slice(start, starts[position + 1] ?? lines.length);
+    if (!block.some((line) => /^ {4}timeout-minutes:/.test(line))) {
+      problems.push(
+        `line ${start + 1}: job ${lines[start].trim().slice(0, -1)} needs timeout-minutes, or a hung step holds a runner for hours`,
       );
     }
   });
@@ -66,7 +88,7 @@ function runProblems(lines) {
 
 /** Returns the problems found in the text of one workflow, none when sound. */
 export function findWorkflowProblems(text) {
-  const lines = text.split("\n");
+  const lines = text.split("\n").map(withoutComment);
   const problems = [];
 
   if (
@@ -80,7 +102,16 @@ export function findWorkflowProblems(text) {
       "pull_request_target runs code from a fork with the repository's secrets: do not use it",
     );
   }
+  if (lines.some((line) => /^\s*workflow_run\s*:/.test(line))) {
+    problems.push(
+      "workflow_run can run with secrets after an untrusted workflow: do not use it",
+    );
+  }
+  if (lines.some((line) => /permissions:\s*write-all/.test(line))) {
+    problems.push("permissions: write-all gives every scope; list the scopes");
+  }
   problems.push(...permissionsProblems(lines));
+  problems.push(...timeoutProblems(lines));
 
   lines.forEach((line, index) => {
     const match = /^\s*(?:- )?uses:\s*(\S+)/.exec(line);
