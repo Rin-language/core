@@ -28,6 +28,7 @@ export type {
   UsageStore,
   UserProfileStore,
 } from "./ports/storage.js";
+export type { UsageMeter, UsageToRecord } from "./ports/usage-meter.js";
 export { buildCoreRoutes } from "./routes/core-routes.js";
 export type { EventPublisher } from "./security/event-publisher.js";
 export { createEventPublisher } from "./security/event-publisher.js";
