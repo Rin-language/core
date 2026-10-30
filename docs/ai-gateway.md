@@ -12,8 +12,8 @@ A feature asks the gateway for a prompt **by id and version**, with **domain dat
 
 | Key | Default | Allowed values | Effect |
 |---|---|---|---|
-| `timeoutMs` | `20000` | Positive integer (ms) | Total time one gateway call may take, **all attempts included**. At the deadline the provider is told to stop (`AbortSignal`) and the gateway stops waiting even if the provider ignores the signal. Ends as `timeout`, with no further attempt. |
-| `maxAttempts` | `2` | Integer 1 to 5 | Calls to the provider for one gateway call, the first included. A retry follows a provider error or a refused answer, never a timeout. Every attempt is counted in the usage. |
+| `timeoutMs` | `20000` | Positive integer (ms) | Total time one gateway call may take, **all attempts included**. At the deadline the provider is told to stop (`AbortSignal`) and the gateway stops waiting even if the provider ignores the signal. Ends as `timeout`, with no further attempt. If the deadline passes while no attempt is running, right after a refused answer, the result is that refusal (`invalid_output`), not `timeout`. |
+| `maxAttempts` | `2` | Integer 1 to 5 | Calls to the provider for one gateway call, the first included. A retry follows a provider error or a refused answer, never a timeout. Every attempt is counted in the usage (see the limit under *Usage meter*). |
 | `maxInputChars` | `8000` | Positive integer | Characters (code points) of all variables of a prompt together. Over it, the call is refused before the provider is reached. |
 | `maxOutputTokens` | `1024` | Positive integer | Ceiling of the output tokens asked of the provider. A prompt may ask for fewer (`maxOutputTokens` in its definition), never more. |
 | `maxOutputChars` | `16000` | Positive integer | Longest answer that is even parsed. A longer one is refused as `too_long`. |
@@ -67,7 +67,7 @@ Prompts live in the language profile, never in code. They are loaded and validat
 | `system` | yes | Non-blank text without `{{` or `}}` | Fixed instructions. It never receives a variable. If any variable is `untrusted`, it must contain the word `untrusted` (any case): it has to tell the model that such blocks are data. |
 | `user` | yes | Non-blank text with `{{name}}` placeholders | The message. Each `{{name}}` is replaced once, in a single pass: a value that itself looks like `{{other}}` is not expanded. |
 | `variables` | yes | Object, name to `{ kind, maxLength }` | Exactly the placeholders used in `user`: an undeclared placeholder, or a declared variable that is never used, stops the server. Names are lowerCamelCase. |
-| `variables.<name>.kind` | yes | `trusted` or `untrusted` | `untrusted` text (a user's writing, an excerpt, imported content) is delimited and escaped. `trusted` text is inserted as is and must be chosen by the server (a level, a language name), never copied from a request. |
+| `variables.<name>.kind` | yes | `trusted` or `untrusted` | `untrusted` text (a user's writing, an excerpt, imported content) is delimited and escaped. `trusted` text is inserted as is and must be chosen by the server (a level, a language name), never copied from a request. The gateway refuses (`invalid_variables`) a trusted value that holds `<`, `>`, `&`, a look-alike of them, a line break or a hidden character. |
 | `variables.<name>.maxLength` | yes | Integer 1 or more | Longest value, in code points. Longer is refused, never cut. |
 | `maxOutputTokens` | no | Integer 1 or more | Output tokens this prompt asks for, capped by `ai.maxOutputTokens`. |
 
@@ -143,8 +143,9 @@ On success: `{ ok: true, value, attempts }`.
 Turns untrusted text into one delimited block: `<untrusted name="text">\n…\n</untrusted>`.
 
 - Counts the length in code points **before** cleaning (padding with invisible characters buys nothing) and refuses over `maxLength` with `{ ok: false, error: { kind: "too_long" } }`. It never truncates.
-- Normalizes to NFC and removes control characters (except newline and tab), zero-width and bidirectional marks, line and paragraph separators.
-- Escapes `&`, `<` and `>` as `&amp;`, `&lt;`, `&gt;`, so the text can neither close the block nor open another one, and the escaping is unambiguous.
+- Normalizes to NFC and removes control characters (except newline and tab), zero-width and bidirectional marks, line and paragraph separators, the soft hyphen, the combining grapheme joiner, the Arabic letter mark, Hangul fillers, interlinear annotation marks and the Unicode tag characters (invisible ASCII that some models read). Variation selectors are **kept**: Japanese uses them for rare kanji forms. They carry a glyph choice, but could in theory hide data; remove them in `HIDDEN_RANGES` of `sanitizer.ts` if your threat model needs it.
+- Escapes `&`, `<` and `>` as `&amp;`, `&lt;`, `&gt;`, so the text can neither close the block nor open another one, and the escaping is unambiguous. A look-alike such as full-width `＜` (which a model that folds Unicode reads as `<`) becomes a numeric entity such as `&#xFF1C;`. Full-width digits and Japanese punctuation are left alone.
+- Escaping makes text longer (`&` becomes five characters), so a prompt can be up to about five times `ai.maxInputChars` when the text is mostly `&`. Lengths are checked before escaping.
 - Throws for a name that is not lowerCamelCase: that is a programming error.
 
 The gateway applies it to every `untrusted` variable. It is pure and can be used alone for any other prompt assembly.
@@ -158,11 +159,11 @@ The answer is untrusted. The extractor finds **the one** JSON object or array in
 | `too_long` | Longer than `options.maxChars`. Not parsed at all. |
 | `no_json` | No object or array in the text. |
 | `invalid_json` | A value that never closes (truncated) or does not parse. |
-| `multiple_json` | Two or more JSON values: the extractor does not choose between them. |
+| `multiple_json` | Two or more JSON values and not exactly one of them fits the schema. With prose such as `See [1]. {…}`, the one value that fits is taken; two values that both fit are refused. |
 | `schema_mismatch` | The value does not match the schema (wrong type, missing or extra key). |
 | `refinement_failed` | `options.refine` returned problems. |
 
-`issues` hold `path: zod_code` pairs (`score: invalid_type`) or the strings your `refine` returned. They **never repeat what the model wrote**.
+`issues` hold `path: zod_code` pairs (`score: invalid_type`) or the strings your `refine` returned. They **never repeat what the model wrote**: a key the schema does not declare (a key the model chose in a `z.record`, say) shows as `<key>`. A `refine` that throws counts as a refusal with the issue `refine_threw`. JSON nested deeper than 64 levels is refused as `invalid_json`.
 
 ### Checking positions against the original text
 
@@ -200,11 +201,13 @@ gateway.run({
 | unit (key of `amounts`) | snake_case, an open set. The gateway records `calls`, `input_tokens`, `output_tokens` for every attempt. A new kind of resource (seconds of audio, say) is a new unit, with no schema change. |
 | quantity | Non-negative safe integer. |
 
-A provider's token figures are untrusted: a negative, fractional or non-numeric figure counts as zero. If recording fails, the call still returns its result, and one error line `usage could not be recorded` is logged with the error name only.
+A provider's token figures are untrusted: a negative, fractional, non-numeric or absurd (over one billion) figure counts as zero. A reply that is not `{ text: string, usage: { inputTokens, outputTokens } }` is a provider error.
+
+**Limit:** an attempt that fails or times out reports no usage, so only its `calls` unit is counted, not the tokens the provider may have billed. A provider that ignores the abort signal and finishes late is not counted either. Do not treat the totals as a billing record; a later quota should add its own margin. If recording fails, the call still returns its result, and one error line `usage could not be recorded` is logged with the error name only.
 
 ## The `ai_call` security event
 
-The gateway passes one event per call to `publishEvent` (see [security-events.md](security-events.md)): user, language, prompt id and version, status (`ok`, `input_rejected`, `provider_error`, `timeout`, `invalid_output`), attempts, duration and token totals. No prompt, variable, answer or error message.
+The gateway passes one event per call to `publishEvent` (see [security-events.md](security-events.md)), even when it refuses the call: user, language, prompt id and version, status (`ok`, `input_rejected`, `provider_error`, `timeout`, `invalid_output`), attempts, duration and token totals. No prompt, variable, answer or error message. `language` and `promptId` appear only when they look like a language code and a prompt id; otherwise the event says `invalid`, so no stray text can reach it.
 
 ## Writing an `LLMProvider`
 

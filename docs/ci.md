@@ -1,6 +1,6 @@
 # Continuous integration: jobs, rules and how to run them locally
 
-What `.github/workflows/ci.yml` checks on every push and pull request, why, and the command that runs each check on your machine. The workflow needs no secret and no write access: a pull request from a fork runs the same jobs.
+What `.github/workflows/ci.yml` checks on every pull request and on every push to `main`, why, and the command that runs each check on your machine. The workflow needs no secret and no write access: a pull request from a fork runs the same jobs.
 
 ## Jobs
 
@@ -26,7 +26,9 @@ They are enforced by `packages/server/test/ci/workflows.test.ts` (rules in `scri
 | Every `uses:` is pinned to a full 40-character commit SHA, with the version in a comment. | A moved or hijacked tag cannot change what runs. |
 | `actions/checkout` has `persist-credentials: false`. | The token is not left in `.git/config` for later steps. |
 | No `pull_request_target`. | It runs code from a fork with the repository's secrets. |
-| No `${{ }}` expression inside a `run:` script. Pass it through `env:` and use the shell variable. | A branch name or a title is attacker-controlled text; in a script it is code injection. |
+| Every job has `timeout-minutes`. | A hung step cannot hold a runner for hours. |
+| No `workflow_run` trigger, no `permissions: write-all`. | They hand secrets or every scope to code that was not reviewed. |
+| No `${{ }}` expression inside a `run:` or a `script:` (github-script). Pass it through `env:` and use the shell variable. | A branch name or a title is attacker-controlled text; in a script it is code injection. |
 
 Dependabot (`.github/dependabot.yml`) opens weekly pull requests for npm packages, GitHub Actions and the Docker base image, waits seven days after a release (`cooldown`), and groups minor and patch updates. Major updates are separate pull requests.
 
@@ -55,6 +57,8 @@ docker run --rm --network none -v "$PWD":/work -w /work node:24 sh -c \
 
 ## Not covered yet
 
+- `migrations-unchanged` runs on pull requests only, and it does not look at the list in `migrations/index.ts`: a migration dropped or reordered there without touching its own file is not caught. A direct push to `main` skips it.
+- The Trivy action (`aquasecurity/trivy-action`) is pinned by commit SHA and by scanner version. The SHA comes from the repository's tag list; nothing here proves it is the genuine release. Check it against the project's security advisories before relying on it.
 - Migration tests against a second database engine: they need that engine to exist in the repository.
 - Automated review of pull requests and a release workflow: not part of this file, to be added as separate workflows.
 - Branch protection (required checks on `main`) is a GitHub repository setting, not a file. Mark `check`, `offline-tests`, `audit`, `local-dependencies`, `secret-scan`, `docker` and `migrations-unchanged` as required.
