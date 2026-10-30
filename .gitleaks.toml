@@ -1,0 +1,6 @@
+# Extends the built-in ruleset. Add an [[allowlists]] entry only for a proven
+# false positive, with a comment saying why (see docs/ci.md).
+title = "contract gitleaks config"
+
+[extend]
+useDefault = true
