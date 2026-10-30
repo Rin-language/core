@@ -47,7 +47,7 @@ function twoLanguageConfig(): LoadedConfig {
           prompts: {
             correction: {
               version: 1,
-              system: "SECRET-PROMPT-TEXT",
+              system: "SECRET-PROMPT-TEXT untrusted",
               user: "{{text}}",
               variables: { text: { kind: "untrusted", maxLength: 100 } },
             },

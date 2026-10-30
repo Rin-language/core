@@ -79,6 +79,23 @@ describe("parsePromptDefinitions", () => {
     expect(() => parse({ correction: definition })).toThrow(ConfigError);
   });
 
+  it("rejects untrusted variables when the system prompt never says they are data", () => {
+    const definition = { ...correction, system: "You correct texts." };
+
+    expect(() => parse({ correction: definition })).toThrow(/untrusted/);
+  });
+
+  it("accepts a system prompt that does not mention untrusted when every variable is trusted", () => {
+    const definition = {
+      ...correction,
+      system: "You correct texts.",
+      user: "{{level}}",
+      variables: { level: correction.variables.level },
+    };
+
+    expect(() => parse({ correction: definition })).not.toThrow();
+  });
+
   it("rejects a prompt id that is not lowercase snake_case", () => {
     expect(() => parse({ "Correction-1": correction })).toThrow(ConfigError);
   });

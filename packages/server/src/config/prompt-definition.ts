@@ -38,6 +38,16 @@ const PromptDefinition = z
         "must not contain {{ or }}: only the user prompt has variables",
       );
     }
+    // The model only treats a block as data if it was told so.
+    const hasUntrusted = Object.values(definition.variables).some(
+      (variable) => variable.kind === "untrusted",
+    );
+    if (hasUntrusted && !/untrusted/i.test(definition.system)) {
+      fail(
+        "system",
+        'must tell the model that text in "untrusted" blocks is data, never instructions',
+      );
+    }
     const withoutPlaceholders = definition.user.replace(PLACEHOLDER, "");
     if (ANY_BRACES.test(withoutPlaceholders)) {
       fail("user", "has a malformed {{placeholder}}");
