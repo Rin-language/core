@@ -1,3 +1,29 @@
+export type {
+  AiErrorKind,
+  AiGateway,
+  AiGatewayOptions,
+  AiRequest,
+  AiResult,
+  AiSettings,
+} from "./ai/gateway.js";
+export { createAiGateway } from "./ai/gateway.js";
+export type {
+  OutputError,
+  OutputErrorKind,
+  ParsedOutput,
+  ParseOptions,
+  Span,
+} from "./ai/output-extractor.js";
+export { findSpanProblems, parseModelOutput } from "./ai/output-extractor.js";
+export type {
+  PromptLookup,
+  PromptReference,
+  PromptRegistry,
+} from "./ai/prompt-registry.js";
+export { createPromptRegistry } from "./ai/prompt-registry.js";
+export type { WrapResult } from "./ai/sanitizer.js";
+export { wrapUntrusted } from "./ai/sanitizer.js";
+export { createStorageUsageMeter } from "./ai/storage-usage-meter.js";
 export type { Env } from "./config/env.js";
 export { parseEnv } from "./config/env.js";
 export type { LoadedConfig } from "./config/load-config.js";
@@ -13,6 +39,8 @@ export type {
   LlmResponse,
 } from "./ports/llm-provider.js";
 export type {
+  AiCallEvent,
+  AiCallStatus,
   ClientKind,
   EventsDroppedEvent,
   IpFingerprint,
