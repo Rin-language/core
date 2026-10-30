@@ -13,6 +13,12 @@ if (baseRef === undefined) {
   process.exit(2);
 }
 
+// Git would read a value starting with "-" as an option, and some write files.
+if (baseRef.startsWith("-")) {
+  console.error("The base ref must not start with '-'");
+  process.exit(2);
+}
+
 // Three dots: what this branch changed since it left the base, not what the
 // base gained since.
 const diff = spawnSync(

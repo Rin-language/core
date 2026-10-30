@@ -154,4 +154,12 @@ describe("check-migrations-unchanged", () => {
 
     expect(result.status).toBe(2);
   });
+
+  it("exits 2 for a base ref that git would read as an option", () => {
+    const repository = createRepository();
+
+    const result = runCheck(["--output=leak.txt", repository], repository);
+
+    expect(result.status).toBe(2);
+  });
 });
