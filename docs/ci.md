@@ -58,7 +58,7 @@ docker run --rm --network none -v "$PWD":/work -w /work node:24 sh -c \
 ## Not covered yet
 
 - `migrations-unchanged` runs on pull requests only, and it does not look at the list in `migrations/index.ts`: a migration dropped or reordered there without touching its own file is not caught. A direct push to `main` skips it.
-- The Trivy action (`aquasecurity/trivy-action`) is pinned by commit SHA and by scanner version. The SHA comes from the repository's tag list; nothing here proves it is the genuine release. Check it against the project's security advisories before relying on it.
+- The Trivy action (`aquasecurity/trivy-action`) is pinned by commit SHA (release v0.36.0), and so are the actions it calls inside. The scanner it installs is pinned to **v0.69.3** with the `version` input: release v0.69.4 was compromised in a supply chain attack, so never move to it. Dependabot does not track that input; change it by hand, after reading the project's security advisories.
 - Migration tests against a second database engine: they need that engine to exist in the repository.
 - Automated review of pull requests and a release workflow: not part of this file, to be added as separate workflows.
 - Branch protection (required checks on `main`) is a GitHub repository setting, not a file. Mark `check`, `offline-tests`, `audit`, `local-dependencies`, `secret-scan`, `docker` and `migrations-unchanged` as required.

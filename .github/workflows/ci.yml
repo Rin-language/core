@@ -127,7 +127,9 @@ jobs:
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: rin-core:ci
-          # The scanner itself, pinned like the action.
+          # The scanner itself, pinned like the action. Never v0.69.4: that release
+          # was compromised in a supply chain attack. Move to a later release only
+          # after checking the project's advisories.
           version: v0.69.3
           scanners: vuln
           severity: HIGH,CRITICAL
