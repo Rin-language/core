@@ -2,6 +2,8 @@ export interface LlmRequest {
   system: string;
   user: string;
   maxOutputTokens: number;
+  /** Aborted at the caller's deadline: an implementation stops working then. */
+  signal?: AbortSignal;
 }
 
 export interface LlmResponse {
