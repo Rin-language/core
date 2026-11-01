@@ -30,7 +30,7 @@ They are enforced by `packages/server/test/ci/workflows.test.ts` (rules in `scri
 | No `workflow_run` trigger, no `permissions: write-all`. | They hand secrets or every scope to code that was not reviewed. |
 | No `${{ }}` expression inside a `run:` or a `script:` (github-script). Pass it through `env:` and use the shell variable. | A branch name or a title is attacker-controlled text; in a script it is code injection. |
 
-Dependabot (`.github/dependabot.yml`) opens weekly pull requests for npm packages, GitHub Actions and the Docker base image, waits seven days after a release (`cooldown`), and groups minor and patch updates. Major updates are separate pull requests.
+Dependabot (`.github/dependabot.yml`) opens weekly pull requests for npm packages, GitHub Actions and the Docker base image, waits seven days after a release (`cooldown`), and groups minor and patch updates. Major updates are separate pull requests. The Docker `node` image is the exception: major versions are ignored (`ignore` in `dependabot.yml`), so the image stays on the Node 24 LTS line, whose support ends on 2028-04-30, and only its patch and minor releases are proposed. Moving to a newer Node line is a deliberate change: update the `FROM` lines of the `Dockerfile` and the `node-version` of the workflow together, test on the new line, then remove the rule.
 
 ## Update a pinned action
 
