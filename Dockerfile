@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24.22.2-bookworm-slim AS build
+FROM node:26.12.0-bookworm-slim AS build
 # The interactive documentation viewer is an optional dependency with hundreds
 # of packages: the image leaves it out unless built with WITH_DOCS=true.
 ARG WITH_DOCS=false
@@ -26,7 +26,7 @@ RUN OPTIONAL=$([ "$WITH_DOCS" = "true" ] || echo "--no-optional") \
   && pnpm --filter @rin-language/core-server build \
   && pnpm --filter @rin-language/core-server --prod --legacy $OPTIONAL deploy /out/server
 
-FROM node:24.22.2-bookworm-slim AS runtime
+FROM node:26.12.0-bookworm-slim AS runtime
 ENV NODE_ENV=production \
   APP_HOST=0.0.0.0 \
   APP_PORT=3000 \
