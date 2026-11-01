@@ -58,7 +58,36 @@ export interface EventsDroppedEvent {
   since: string;
 }
 
-export type SecurityEvent = RequestEvent | EventsDroppedEvent;
+/** How a call to the model ended. */
+export type AiCallStatus =
+  | "ok"
+  | "input_rejected"
+  | "provider_error"
+  | "timeout"
+  | "invalid_output";
+
+/**
+ * What one call to the model cost and how it ended, and nothing of what it
+ * carried: no prompt, no variable, no model output, no error message.
+ */
+export interface AiCallEvent {
+  type: "ai_call";
+  occurredAt: string;
+  userId: UserId;
+  language: string;
+  /** The id and version of the prompt, which are configuration, not content. */
+  promptId: string;
+  promptVersion: number;
+  status: AiCallStatus;
+  /** Calls made to the provider, retries included. */
+  attempts: number;
+  durationMs: number;
+  /** Summed over the attempts, as the provider reported them. */
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export type SecurityEvent = RequestEvent | EventsDroppedEvent | AiCallEvent;
 
 /**
  * Receives security events. Core only emits: the rules that turn events into

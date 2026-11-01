@@ -2,7 +2,7 @@
 
 Open-source core of a language immersion app, Japanese first. This repo holds the server, the web client and the shared logic. The schemas come from the separate [`contract`](https://www.npmjs.com/package/@rin-language/contract) package.
 
-Status: slice 0 (foundations). The server exposes `/health`, `/v1/limits`, `/v1/capabilities`, its OpenAPI document and, if you turn it on, an interactive documentation page, and serves a minimal web client. Correction, streak, reader and list come in the next slices.
+Status: foundations plus the base for calling a language model. The server exposes `/health`, `/v1/limits`, `/v1/capabilities`, its OpenAPI document and, if you turn it on, an interactive documentation page, and serves a minimal web client. Correction, streak, reader and list come in the next slices.
 
 ## Run it with Docker
 
@@ -45,6 +45,7 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `pnpm lint` | Biome check. |
 | `pnpm format` | Biome format, writing the files. |
 | `pnpm typecheck` | TypeScript strict, for the server and for the web client. |
+| `scripts/run-tests-offline.sh` | The tests with the network cut (Linux with `sudo`). See [docs/ci.md](docs/ci.md). |
 | `pnpm --filter @rin-language/core-server build` | Compile the server to `packages/server/dist`. |
 | `pnpm --filter @rin-language/core-web build` | Build the client to `packages/web/dist`. |
 
@@ -63,7 +64,7 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `APP_IP_FINGERPRINT_KEY` | unset | Secret key (32 characters or more) for the network fingerprint of [security events](docs/security-events.md). Never put it in `app.json`. |
 | `APP_IP_FINGERPRINT_KEY_ID` | unset | Label of that key, set together with it, so a rotation shows in the events. |
 
-**`config/app.json`** holds the tunable settings: enabled languages, size limits, request timeouts, CORS and the documentation page.
+**`config/app.json`** holds the tunable settings: enabled languages, size limits, request timeouts, CORS, the documentation page and the limits on model calls. Every key, default and allowed value is in [docs/configuration.md](docs/configuration.md).
 
 | Key | Meaning |
 |---|---|
@@ -73,6 +74,7 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `timeouts` | `headersMs`, `requestMs` and `idleMs`: protection against slow requests and against clients that stop reading. A connection that moves no byte for `idleMs` is closed, so it must exceed the time your slowest route takes to start answering. |
 | `cors.allowedOrigins` | Exact origins allowed to read the API from a browser. Empty by default. No wildcard, no `null`, no credentials. |
 | `docs.enabled` | Serve the interactive documentation at `/docs`. Off by default, see [docs/interactive-docs.md](docs/interactive-docs.md). |
+| `ai` | `timeoutMs`, `maxAttempts`, `maxInputChars`, `maxOutputTokens`, `maxOutputChars`, `idleMarginMs`: limits on every call to a model. `timeouts.idleMs` must be at least `timeoutMs + idleMarginMs` or the server does not start. See [docs/ai-gateway.md](docs/ai-gateway.md). |
 | `securityEvents` | `trustedProxyHops` (proxies of yours in front of the server, 0 by default), `queueSize` (events held back while the receiver is slow) and `clientKinds` (how a User-Agent is reduced to a kind). See [docs/security-events.md](docs/security-events.md). |
 
 An invalid file stops the server at startup with a message naming the file and the rule.
@@ -100,7 +102,7 @@ Everything exposed is closed until it is opened on purpose, and each default is 
 - Request body size limit and slow-request timeouts, from the configuration.
 - Logs hold metadata only: method, route pattern, status, duration. No query string, header, body or user content.
 - Security events, off unless a host plugs a receiver in: one metadata-only event per API request (sizes, status, error code, a keyed hash of the caller's network, a coarse client kind), delivered in the background through a bounded queue that can neither slow a request nor grow without limit. See [docs/security-events.md](docs/security-events.md).
-- The server owns all limits and, later, all prompts. The client never sends a free-form prompt.
+- The server owns all limits and all prompts. The client never sends a free-form prompt. Every model call goes through one gateway that delimits untrusted text, bounds input, output, attempts and time, validates the answer and counts the usage. See [docs/ai-gateway.md](docs/ai-gateway.md).
 
 ## Add an interface language
 
@@ -120,11 +122,13 @@ Add a profile and an error types file and list the code in `config/app.json`. No
 ```
 config/            instance settings and language profiles
 data/              error types and grammar rules, one file per language
-docs/              language data format, security events, interactive documentation
+docs/              configuration, AI gateway, language data format, security events, CI, interactive documentation
+scripts/           checks run by the CI (local dependencies, migrations, offline tests, workflow rules)
+.github/           CI workflow and Dependabot
 packages/
-  server/          HTTP server, registry, OpenAPI, SQLite storage, ports
+  server/          HTTP server, registry, OpenAPI, SQLite storage, ports, AI gateway
   web/             React + Vite client
   test-kit/        fakes and checks shared by the tests (not shipped)
 ```
 
-The server depends on interfaces (`Storage`, `LLMProvider`, `Clock`, `Identity`) and never on a concrete provider. The coding rules are in [BIBLE.md](BIBLE.md).
+The server depends on interfaces (`Storage`, `LLMProvider`, `UsageMeter`, `Clock`, `Identity`) and never on a concrete provider. The coding rules are in [BIBLE.md](BIBLE.md).

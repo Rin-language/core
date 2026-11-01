@@ -11,5 +11,13 @@
   "timeouts": { "headersMs": 10000, "requestMs": 30000, "idleMs": 30000 },
   "cors": { "allowedOrigins": [] },
   "docs": { "enabled": false },
+  "ai": {
+    "timeoutMs": 20000,
+    "maxAttempts": 2,
+    "maxInputChars": 8000,
+    "maxOutputTokens": 1024,
+    "maxOutputChars": 16000,
+    "idleMarginMs": 5000
+  },
   "securityEvents": { "trustedProxyHops": 0, "queueSize": 1000 }
 }

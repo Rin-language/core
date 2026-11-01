@@ -33,6 +33,7 @@ TypeScript everywhere, Node server (Hono), React + Vite web client (i18next for 
 - Two interfaces from day one: `LLMProvider` (a remote API with the user's key, or a local model) and `Storage` (SQLite now, other databases possible).
 - Everything that depends on the language (error types, levels, grammar rules, prompts) lives in per-language data and configuration, never hardcoded. Grammar rules are in `data/grammar/<language>.json`, error types in `data/error-types/<language>.json`; see `docs/language-data.md`. Keep that page updated when their format changes.
 - Security events (metadata-only, one per API request, emitted to an injected `SecurityEventSink`; core has no fraud rules): see `docs/security-events.md`, and keep that page updated when the event format or its guarantees change. A new event type must carry no user content, no raw address and no header value.
+- Every call to a model goes through the AI gateway (`packages/server/src/ai/`): versioned prompts from the language profile, untrusted text delimited by the sanitizer, output validated by the extractor, usage counted by `UsageMeter`; see `docs/ai-gateway.md`, and keep that page updated when the `ai` keys or the prompt format change.
 - Always provide a `FakeLLMProvider` for tests. Tests never call a real model.
 - Business logic depends on interfaces, never on a concrete provider or database.
 
@@ -68,6 +69,7 @@ Only work on the slice I name. Anything outside the current slice is out of scop
   - install: `pnpm install`
   - dev: `pnpm dev` (server), `pnpm --filter @rin-language/core-web dev` (client)
   - test: `pnpm test`; lint: `pnpm lint`; typecheck: `pnpm typecheck` (server and web)
+  - tests with the network cut (Linux, sudo): `scripts/run-tests-offline.sh pnpm test`; the other CI checks and how to run them: `docs/ci.md`
   - build: `pnpm --filter @rin-language/core-server build`, `pnpm --filter @rin-language/core-web build`
   - run in Docker: `docker compose up -d --build`
 

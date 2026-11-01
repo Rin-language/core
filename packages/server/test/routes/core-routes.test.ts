@@ -44,7 +44,14 @@ function twoLanguageConfig(): LoadedConfig {
           code,
           levels,
           skills: ["reading", "writing"],
-          prompts: { correction: "SECRET-PROMPT-TEXT" },
+          prompts: {
+            correction: {
+              version: 1,
+              system: "SECRET-PROMPT-TEXT untrusted",
+              user: "{{text}}",
+              variables: { text: { kind: "untrusted", maxLength: 100 } },
+            },
+          },
         },
         errorTypes: {
           default: "other",

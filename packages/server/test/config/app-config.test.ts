@@ -17,6 +17,69 @@ const withOrigins = (allowedOrigins: string[]) => ({
 });
 
 describe("parseAppConfig", () => {
+  describe("ai", () => {
+    const withAi = (ai: object, timeouts: object = {}) => ({
+      ...validConfig,
+      timeouts: { ...validConfig.timeouts, ...timeouts },
+      ai,
+    });
+
+    it("bounds the AI calls by default", () => {
+      expect(parseAppConfig(validConfig).ai).toEqual({
+        timeoutMs: 20000,
+        maxAttempts: 2,
+        maxInputChars: 8000,
+        maxOutputTokens: 1024,
+        maxOutputChars: 16000,
+        idleMarginMs: 5000,
+      });
+    });
+
+    it("reads the AI settings", () => {
+      const config = parseAppConfig(
+        withAi({ timeoutMs: 5000, maxAttempts: 3 }),
+      );
+
+      expect(config.ai).toMatchObject({ timeoutMs: 5000, maxAttempts: 3 });
+    });
+
+    it("refuses more than 5 attempts", () => {
+      expect(() => parseAppConfig(withAi({ maxAttempts: 6 }))).toThrow(
+        ConfigError,
+      );
+    });
+
+    it("refuses zero attempts", () => {
+      expect(() => parseAppConfig(withAi({ maxAttempts: 0 }))).toThrow(
+        ConfigError,
+      );
+    });
+
+    it("refuses an unknown AI key", () => {
+      expect(() => parseAppConfig(withAi({ retries: 3 }))).toThrow(ConfigError);
+    });
+
+    it("refuses an idle timeout that does not outlast the AI deadline with its margin", () => {
+      const config = withAi(
+        { timeoutMs: 20000, idleMarginMs: 5000 },
+        { idleMs: 24999 },
+      );
+
+      expect(() => parseAppConfig(config)).toThrow(
+        /timeouts\.idleMs.*ai\.timeoutMs.*ai\.idleMarginMs/s,
+      );
+    });
+
+    it("accepts an idle timeout that outlasts the AI deadline with its margin", () => {
+      const config = withAi(
+        { timeoutMs: 20000, idleMarginMs: 5000 },
+        { idleMs: 25000 },
+      );
+
+      expect(parseAppConfig(config).timeouts.idleMs).toBe(25000);
+    });
+  });
+
   it("accepts a minimal config", () => {
     expect(parseAppConfig(validConfig)).toMatchObject({
       languages: ["ja"],
@@ -145,6 +208,7 @@ describe("parseAppConfig", () => {
     const config = parseAppConfig({
       ...validConfig,
       timeouts: { headersMs: 10000, requestMs: 30000, idleMs: 5000 },
+      ai: { timeoutMs: 1000, idleMarginMs: 1000 },
     });
 
     expect(config.timeouts.idleMs).toBe(5000);
@@ -155,6 +219,7 @@ describe("parseAppConfig", () => {
       parseAppConfig({
         ...validConfig,
         timeouts: { headersMs: 10000, requestMs: 30000, idleMs },
+        ai: { timeoutMs: 1, idleMarginMs: 0 },
       }),
     ).toThrow(ConfigError);
   });

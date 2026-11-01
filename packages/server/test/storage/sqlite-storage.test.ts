@@ -153,3 +153,22 @@ describe("schema rules", () => {
     database.close();
   });
 });
+
+describe("SqliteStorage usage", () => {
+  it("refuses a negative quantity", async () => {
+    const storage = createSqliteStorage({ path: ":memory:", clock });
+
+    await expect(
+      storage.usage.add("user-a", [
+        {
+          day: "2026-10-29",
+          language: "ja",
+          purpose: "correction",
+          unit: "calls",
+          quantity: -1,
+        },
+      ]),
+    ).rejects.toThrow();
+    await storage.close();
+  });
+});
