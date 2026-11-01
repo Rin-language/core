@@ -36,3 +36,8 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    # Node stays on the 24 LTS line until we migrate on purpose (its support
+    # ends 2028-04-30). Patch and minor updates still come; 25 and 26 do not.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

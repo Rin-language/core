@@ -5,3 +5,5 @@ dist
 *.sqlite-*
 .env
 .env.*
+.metrics/
+target/
