@@ -90,3 +90,22 @@ describe("parseFrequencyPack unknown keys", () => {
     ).not.toContain("fake line");
   });
 });
+
+describe("parseFrequencyPack word length", () => {
+  const withWord = (word: string): unknown => ({
+    ...asObject(fixture("written")),
+    words: { [word]: 1 },
+  });
+
+  it("accepts a word of exactly 64 characters", () => {
+    expect(
+      parseFrequencyPack(withWord("あ".repeat(64)), "p.json").words.size,
+    ).toBe(1);
+  });
+
+  it("refuses a word of 65 characters", () => {
+    expect(() =>
+      parseFrequencyPack(withWord("あ".repeat(65)), "p.json"),
+    ).toThrow(PackError);
+  });
+});

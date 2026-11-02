@@ -34,7 +34,7 @@ export function analyzeText(text: string): TextStructure {
   let totalCharacters = 0;
 
   const endSentence = () => {
-    if (current.trim().length > 0) sentences.push(current);
+    sentences.push(current);
     current = "";
   };
 

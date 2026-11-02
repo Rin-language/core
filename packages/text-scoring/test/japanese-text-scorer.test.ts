@@ -386,3 +386,23 @@ describe("speech rate boundary", () => {
     expect(score(EASY, "spoken", 0).subScores.speechRate).toBe(0);
   });
 });
+
+describe("sentence length between the bounds", () => {
+  const { scorer } = build({
+    ...shipped,
+    sentence: { easyLength: 1, hardLength: 11 },
+  });
+  const lengthOf = (text: string): number =>
+    scorer.score({ text, mode: "written" }).subScores.sentenceLength;
+
+  it("ignores a line of symbols in the mean", () => {
+    expect(lengthOf("私は行きます。\n＊＊＊\n私は行きます。")).toBeCloseTo(
+      0.3,
+      10,
+    );
+  });
+
+  it("counts a sentence of one word in the mean", () => {
+    expect(lengthOf("私。\n私は行きます。")).toBeCloseTo(0.15, 10);
+  });
+});

@@ -114,3 +114,9 @@ describe("splitIntoChunks edge cases", () => {
     expect(splitIntoChunks("あいう", 3)).toEqual(["あいう"]);
   });
 });
+
+describe("analyzeText short sentences", () => {
+  it("keeps a sentence of a single character", () => {
+    expect(analyzeText("私").sentences).toEqual(["私"]);
+  });
+});
