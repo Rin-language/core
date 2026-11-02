@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSudachiModule } from "../src/sudachi/module-shape.js";
+import { isSudachiModule, toTokens } from "../src/sudachi/module-shape.js";
 
 const valid = { Tokenizer: class {}, SplitMode: { a: () => 0 } };
 
@@ -22,5 +22,28 @@ describe("isSudachiModule", () => {
     ["a null SplitMode", { Tokenizer: class {}, SplitMode: null }],
   ])("rejects %s", (_name, value) => {
     expect(isSudachiModule(value)).toBe(false);
+  });
+});
+
+describe("toTokens", () => {
+  it("maps the morphemes of a successful call", () => {
+    expect(
+      toTokens([
+        { surface: "行き", dictionaryForm: "行く", partOfSpeech: ["動詞"] },
+      ]),
+    ).toEqual([{ surface: "行き", lemma: "行く", partOfSpeech: ["動詞"] }]);
+  });
+
+  it("throws a message without the text when Sudachi returns an error value", () => {
+    const failure = new Error("Tokenization failed: Input is too long");
+    expect(() => toTokens(failure)).toThrowError(
+      "Sudachi could not tokenize the text",
+    );
+  });
+
+  it("throws for any result that is not a list", () => {
+    expect(() => toTokens(undefined)).toThrowError(
+      "Sudachi could not tokenize the text",
+    );
   });
 });

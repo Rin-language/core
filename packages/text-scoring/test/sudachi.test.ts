@@ -95,6 +95,20 @@ describe.skipIf(!isDictionaryAvailable)("with the real dictionary", () => {
     expect(tokens.map((token) => token.lemma)).toContain("行く");
   });
 
+  it("fails without quoting the text when the input is too long for Sudachi", () => {
+    const tooLong = "あ".repeat(16400);
+    expect(() => createSudachiTokenizer().tokenize(tooLong)).toThrowError(
+      "Sudachi could not tokenize the text",
+    );
+  });
+
+  it("returns a rare kanji as one token", () => {
+    const surfaces = createSudachiTokenizer()
+      .tokenize("𠮷野家")
+      .map((token) => token.surface);
+    expect(surfaces).toContain("𠮷");
+  });
+
   it("returns the part of speech path", () => {
     const [first] = createSudachiTokenizer().tokenize("映画");
     expect(first?.partOfSpeech[0]).toBe("名詞");

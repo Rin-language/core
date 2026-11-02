@@ -69,7 +69,7 @@ Loaded with `loadScoringConfig(path, levels)`. A file larger than 1 MiB, invalid
 | `version` | `"0-uncalibrated"` | non-blank string | Returned in `versions.scoring`. Change it whenever weights or thresholds change. |
 | `language` | `"ja"` | non-blank string | Language this file is for. |
 | `maxChars` | `200000` | integer 1..10000000 | Texts longer than this are refused with `text_too_long`. It counts UTF-16 code units of the text as given: a rare kanji such as 𠮷 counts 2 and a CRLF line break counts 2. The size is checked before anything else, even for a blank text. |
-| `tokenizerChunkChars` | `10000` | integer 100..16000 | A sentence longer than this many UTF-16 units is cut into chunks before tokenizing. Sudachi refuses input above about 49 KB of UTF-8 (from the upstream project, not verified here); 16000 characters of 3-byte kanji stay below that. |
+| `tokenizerChunkChars` | `10000` | integer 100..16000 | A sentence longer than this many UTF-16 units is cut into chunks before tokenizing. Sudachi refuses input above 49149 bytes of UTF-8 (checked with a real dictionary: 16383 kana pass, 16400 fail); 16000 characters of 3-byte kanji stay below that. |
 | `unknownDifficulty` | `1` | number 0..1 | Difficulty of a lemma or kanji absent from the pack. |
 | `excludedPartsOfSpeech` | `["助詞","助動詞","補助記号","空白","記号"]` | array of non-blank strings | Tokens whose first part of speech is listed are not counted as vocabulary. |
 | `sentence.easyLength` | `6` | number > 0, below `hardLength` | Tokens per sentence mapped to difficulty 0. |
@@ -145,6 +145,8 @@ const tokenizer = createSudachiTokenizer({ splitMode: "A" }); // "A" (default), 
 | Newer dictionary format | A SudachiDict built in the newer format (its file starts with the text `SudachiBinaryDic`, seen on the release dated 2026-10-15) is refused with an `Error` before loading, because the engine inside `@nikkei/napi-sudachi` 0.12.0 aborts the process on it (`Invalid header version`). Use an older SudachiDict release. |
 | Corrupt dictionary | A file that exists but is not a valid SudachiDict still aborts the whole process (exit code 134) and the native module may print the path to stderr. Verify the checksum, create the tokenizer once at startup rather than on a request, and, if a server must survive it, run tokenization in a child process (a worker thread does not help). |
 | `splitMode` | `A`, `B` or `C`; anything else throws. |
+| Too long input | The native `tokenize` returns an error value instead of throwing when the input is above 49149 bytes. The adapter turns it into an `Error("Sudachi could not tokenize the text")` that carries neither the text nor the native message. The scorer never hits it with a valid `tokenizerChunkChars`. |
+| Tested with | `sudachi-dictionary-20250515-small` (old format): the real-dictionary tests pass. The releases dated 2026-07-23 and 2026-10-15 are in the newer format and are refused. Run the tests with `SUDACHI_DICT_PATH=<file> pnpm vitest run packages/text-scoring/test/sudachi`. |
 
 Tests that need the real dictionary skip when `SUDACHI_DICT_PATH` is unset.
 

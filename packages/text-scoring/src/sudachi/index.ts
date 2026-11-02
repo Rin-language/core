@@ -1,7 +1,11 @@
 import { closeSync, openSync, readSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { Token, Tokenizer } from "../types.js";
-import { isSudachiModule, type SudachiModule } from "./module-shape.js";
+import {
+  isSudachiModule,
+  type SudachiModule,
+  toTokens,
+} from "./module-shape.js";
 
 export type SudachiSplitMode = "A" | "B" | "C";
 
@@ -92,11 +96,7 @@ export function createSudachiTokenizer(
   }
   return {
     tokenize(text: string): readonly Token[] {
-      return sudachi.tokenize(text, mode).map((morpheme) => ({
-        surface: morpheme.surface,
-        lemma: morpheme.dictionaryForm,
-        partOfSpeech: morpheme.partOfSpeech,
-      }));
+      return toTokens(sudachi.tokenize(text, mode));
     },
   };
 }
