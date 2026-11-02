@@ -48,6 +48,7 @@ APP_WEB_DIR=packages/web/dist pnpm dev
 | `scripts/run-tests-offline.sh` | The tests with the network cut (Linux with `sudo`). See [docs/ci.md](docs/ci.md). |
 | `pnpm --filter @rin-language/core-server build` | Compile the server to `packages/server/dist`. |
 | `pnpm --filter @rin-language/core-web build` | Build the client to `packages/web/dist`. |
+| `pnpm --filter @rin-language/text-scoring build` | Compile the text scorer to `packages/text-scoring/dist` (see its [README](packages/text-scoring/README.md) to link it elsewhere). |
 
 ## Configuration
 
