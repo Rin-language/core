@@ -49,7 +49,7 @@ describe("parseFrequencyPack", () => {
       '{"format":1,"version":"v","language":"ja","mode":"written","source":"s","licence":"l","bandCount":3,"words":{"__proto__":2}}',
     );
     parseFrequencyPack(raw, "p.json");
-    expect(({} as Record<string, unknown>).__proto__).toBe(Object.prototype);
+    expect(Object.keys(Object.prototype)).toEqual([]);
   });
 
   it("does not put a word in the message of a rejected pack", () => {
