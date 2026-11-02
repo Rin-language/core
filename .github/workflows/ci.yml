@@ -37,6 +37,9 @@ jobs:
       - run: pnpm test
       - run: pnpm --filter @rin-language/core-server build
       - run: pnpm --filter @rin-language/core-web build
+      - run: pnpm --filter @rin-language/text-scoring build
+      # Imports the built package through its `exports`, as a consumer would.
+      - run: pnpm --filter @rin-language/text-scoring check-build
 
   # The tests run in a network namespace with only loopback, after a probe has
   # shown the network is cut: no test can reach a real model.
