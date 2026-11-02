@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from "node:fs";
+import { closeSync, constants, fstatSync, openSync, readSync } from "node:fs";
 import { basename } from "node:path";
 import { PackError } from "./errors.js";
 import {
@@ -18,29 +18,59 @@ export interface LoadPackOptions extends ParsePackOptions {
 const isMissingFile = (error: unknown): boolean =>
   error instanceof Error && "code" in error && error.code === "ENOENT";
 
+function assertLimit(label: string, name: string, value: number): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new PackError(label, [`${name} must be a non-negative integer`]);
+  }
+}
+
+/**
+ * Opens the file once and checks the opened file, not the path: a device, a
+ * pipe or a folder is refused (their size is 0, so a size cap would not stop
+ * them) and a regular file that grows after the check is cut off at the cap.
+ * Non-blocking open so a named pipe cannot hang the process.
+ */
+function readBounded(path: string, label: string, maxBytes: number): Buffer {
+  let descriptor: number;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK);
+  } catch (error) {
+    // No cause is attached: it would quote the path.
+    throw new PackError(label, [
+      isMissingFile(error) ? "file not found" : "file not readable",
+    ]);
+  }
+  try {
+    const stats = fstatSync(descriptor);
+    if (!stats.isFile()) throw new PackError(label, ["not a regular file"]);
+    if (stats.size > maxBytes) throw new PackError(label, ["file too large"]);
+    const buffer = Buffer.alloc(stats.size + 1);
+    const bytesRead = readSync(descriptor, buffer, 0, buffer.length, 0);
+    if (bytesRead === buffer.length) {
+      throw new PackError(label, ["file too large"]);
+    }
+    return buffer.subarray(0, bytesRead);
+  } catch (error) {
+    if (error instanceof PackError) throw error;
+    throw new PackError(label, ["file not readable"]);
+  } finally {
+    closeSync(descriptor);
+  }
+}
+
 /** Reads a JSON file under a size cap. Problems never quote the content. */
 export function readJsonFile(
   path: string,
   label: string,
   maxBytes: number,
 ): unknown {
-  let text: string;
+  assertLimit(label, "maxBytes", maxBytes);
+  const bytes = readBounded(path, label, maxBytes);
   try {
-    if (statSync(path).size > maxBytes) {
-      throw new PackError(label, ["file too large"]);
-    }
-    text = readFileSync(path, "utf8");
-  } catch (error) {
-    if (error instanceof PackError) throw error;
-    const reason = isMissingFile(error)
-      ? "file not found"
-      : "file not readable";
-    throw new PackError(label, [reason], { cause: error });
-  }
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new PackError(label, ["not valid JSON"], { cause: error });
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    // No cause is attached: a parse error quotes part of the file.
+    throw new PackError(label, ["not valid JSON"]);
   }
 }
 
@@ -49,6 +79,9 @@ export function loadFrequencyPack(
   options: LoadPackOptions = {},
 ): FrequencyPack {
   const label = basename(path);
+  if (options.maxEntries !== undefined) {
+    assertLimit(label, "maxEntries", options.maxEntries);
+  }
   const raw = readJsonFile(
     path,
     label,

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ScoringInputError } from "../src/errors.js";
+import { PackError, ScoringInputError } from "../src/errors.js";
 import {
   type FrequencyPack,
   parseFrequencyPack,
@@ -300,5 +300,83 @@ describe("exact values and small weights", () => {
       scorer.score({ text: EASY, mode: "spoken", speechRate: 500 }).subScores
         .speechRate,
     ).toBe(1);
+  });
+});
+
+describe("hardening", () => {
+  it("refuses a pack whose own mode differs from the requested one", () => {
+    const { scorer } = build(shipped, {
+      written: packs.written,
+      spoken: packs.written,
+    });
+    expect(
+      problemOf(() =>
+        scorer.score({ text: EASY, mode: "spoken", speechRate: 300 }),
+      ),
+    ).toBe("mode_unavailable");
+  });
+
+  it.each(["__proto__", "constructor", "toString"])(
+    "refuses the mode %s",
+    (mode) => {
+      expect(
+        problemOf(() =>
+          build().scorer.score({ text: EASY, mode: mode as ScoringMode }),
+        ),
+      ).toBe("mode_unavailable");
+    },
+  );
+
+  it("refuses a scorer whose levels do not fit the thresholds", () => {
+    expect(() =>
+      createJapaneseTextScorer({
+        tokenizer: new FakeTokenizer(JAPANESE_LEXICON),
+        levels: ["A", "B"],
+        config: shipped,
+        packs,
+      }),
+    ).toThrow(PackError);
+  });
+
+  it("refuses a scoring file written for another language", () => {
+    expect(() =>
+      createJapaneseTextScorer({
+        tokenizer: new FakeTokenizer(JAPANESE_LEXICON),
+        levels: LEVELS,
+        config: { ...shipped, language: "zh" },
+        packs,
+      }),
+    ).toThrow(PackError);
+  });
+
+  it("checks the size before looking at blank text", () => {
+    const { scorer } = build({ ...shipped, maxChars: 3 });
+    expect(
+      problemOf(() => scorer.score({ text: "     ", mode: "written" })),
+    ).toBe("text_too_long");
+  });
+
+  it("refuses a speech rate that is invalid even when it would be ignored", () => {
+    expect(problemOf(() => score(EASY, "written", Number.NaN))).toBe(
+      "speech_rate_invalid",
+    );
+  });
+
+  it("ignores a line of symbols when measuring sentence length", () => {
+    expect(
+      score("私は行きます。\n＊＊＊\n私は行きます。").subScores.sentenceLength,
+    ).toBe(score("私は行きます。\n私は行きます。").subScores.sentenceLength);
+  });
+
+  it("counts the tokens of every chunk of a long sentence", () => {
+    const { scorer } = build({
+      ...shipped,
+      tokenizerChunkChars: 100,
+      sentence: { easyLength: 6, hardLength: 206 },
+    });
+    expect(
+      scorer.score({ text: "私".repeat(120), mode: "written" }).subScores
+        .sentenceLength,
+    ).toBeCloseTo(0.57, 10);
   });
 });

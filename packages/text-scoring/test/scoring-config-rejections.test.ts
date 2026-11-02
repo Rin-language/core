@@ -203,9 +203,9 @@ describe("parseScoringConfig rejections", () => {
   });
 
   it("reports an unknown top-level field", () => {
-    expect(hasProblem(problemsOf({ ...clone(), extra: 1 }), "extra")).toBe(
-      true,
-    );
+    expect(
+      hasProblem(problemsOf({ ...clone(), extra: 1 }), "unknown key"),
+    ).toBe(true);
   });
 
   it("reports thresholds for a three-level scale", () => {

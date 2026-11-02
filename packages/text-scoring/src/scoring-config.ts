@@ -5,13 +5,16 @@ import { toProblems } from "./zod-problems.js";
 
 const MAX_CHARS_LIMIT = 10_000_000;
 const MIN_CHUNK_CHARS = 100;
-const MAX_CHUNK_CHARS = 40_000;
+// Sudachi refuses input above about 49 KB of UTF-8; 16000 characters of 3-byte
+// kanji stay below that.
+const MAX_CHUNK_CHARS = 16_000;
+const MAX_WEIGHT = 1000;
 
 const NonBlank = z.string().refine((value) => value.trim().length > 0, {
   message: "must not be blank",
 });
 
-const Weight = z.number().finite().min(0);
+const Weight = z.number().finite().min(0).max(MAX_WEIGHT);
 const Range = z
   .strictObject({ easy: z.number().positive(), hard: z.number().positive() })
   .refine((range) => range.easy < range.hard, "easy must be below hard");

@@ -20,7 +20,7 @@ interface ScoreInput { text: string; mode: ScoringMode; speechRate?: number }
 interface TextScorer { readonly language: string; score(input: ScoreInput): ScoreResult }
 ```
 
-`createJapaneseTextScorer({ tokenizer, levels, config, packs })` returns a `TextScorer`.
+`createJapaneseTextScorer({ tokenizer, levels, config, packs })` returns a `TextScorer`. It throws a `PackError` when `config.language` is not `ja` or when a `thresholds` array does not have `levels.length - 1` values.
 
 | Option | Type | Meaning |
 |---|---|---|
@@ -50,13 +50,14 @@ All sub-scores are always computed from the text, even when their weight is 0, e
 
 - Band difficulty of a known entry: `(band - 1) / (bandCount - 1)`. Unknown entry: `unknownDifficulty`.
 - Vocabulary counts distinct lemmas (the surface form when the lemma is empty), skipping punctuation and tokens whose first part of speech is in `excludedPartsOfSpeech`.
+- A line with no word (a row of symbols such as a scene break) is not a sentence and does not lower the mean sentence length.
 - Sentences end at `。！？!?…` outside quotes and at every newline. A newline also closes open quotes, so an unbalanced `「` only affects its own paragraph. Sentence length counts tokens that contain a letter or a digit.
 - Direct dialogue is measured from the text, not from grammar.
 - `score = sum(weight * subScore) / sum(weight)` over the weights above 0 of the mode.
 
 ## Speech rate input
 
-`speechRate` is supplied by the caller, in characters per minute. This package never measures it. It is required (`speech_rate_missing`) when the mode's `speechRate` weight is above 0, and must be a finite number `>= 0` when given (`speech_rate_invalid`). With the shipped weights it is used in `spoken` mode and ignored in `written` mode.
+`speechRate` is supplied by the caller, in characters per minute. This package never measures it. It is required (`speech_rate_missing`) when the mode's `speechRate` weight is above 0. When given it must be a finite number `>= 0` in every mode, even a mode that ignores it (`speech_rate_invalid`). With the shipped weights it is used in `spoken` mode and its value is ignored in `written` mode.
 
 ## Scoring file: `data/scoring/<language>.json`
 
@@ -67,15 +68,15 @@ Loaded with `loadScoringConfig(path, levels)`. A file larger than 1 MiB, invalid
 | `format` | `1` | `1` | File format version. |
 | `version` | `"0-uncalibrated"` | non-blank string | Returned in `versions.scoring`. Change it whenever weights or thresholds change. |
 | `language` | `"ja"` | non-blank string | Language this file is for. |
-| `maxChars` | `200000` | integer 1..10000000 | Longer texts are refused with `text_too_long`. |
-| `tokenizerChunkChars` | `10000` | integer 100..40000 | A sentence longer than this is cut into chunks before tokenizing (Sudachi refuses very long input). |
+| `maxChars` | `200000` | integer 1..10000000 | Texts longer than this are refused with `text_too_long`. It counts UTF-16 code units of the text as given: a rare kanji such as 𠮷 counts 2 and a CRLF line break counts 2. The size is checked before anything else, even for a blank text. |
+| `tokenizerChunkChars` | `10000` | integer 100..16000 | A sentence longer than this many UTF-16 units is cut into chunks before tokenizing. Sudachi refuses input above about 49 KB of UTF-8 (from the upstream project, not verified here); 16000 characters of 3-byte kanji stay below that. |
 | `unknownDifficulty` | `1` | number 0..1 | Difficulty of a lemma or kanji absent from the pack. |
 | `excludedPartsOfSpeech` | `["助詞","助動詞","補助記号","空白","記号"]` | array of non-blank strings | Tokens whose first part of speech is listed are not counted as vocabulary. |
 | `sentence.easyLength` | `6` | number > 0, below `hardLength` | Tokens per sentence mapped to difficulty 0. |
 | `sentence.hardLength` | `40` | number > 0 | Tokens per sentence mapped to difficulty 1. |
 | `speechRate.easy` | `250` | number > 0, below `hard` | Characters per minute mapped to 0. |
 | `speechRate.hard` | `500` | number > 0 | Characters per minute mapped to 1. |
-| `weights.written.vocabulary` | `4` | number >= 0 | Weight in written mode. |
+| `weights.written.vocabulary` | `4` | number 0..1000 | Weight in written mode (every weight is capped at 1000 so sums cannot overflow). |
 | `weights.written.kanji` | `3` | number >= 0 | Same. |
 | `weights.written.sentenceLength` | `2` | number >= 0 | Same. |
 | `weights.written.dialogue` | `1` | number >= 0 | Same. |
@@ -122,7 +123,7 @@ The frequency pack format is in [language-data.md](language-data.md).
 |---|---|
 | `text_empty` | Empty or blank text. |
 | `text_too_long` | More than `maxChars` characters. |
-| `mode_unavailable` | No pack for the mode, or the pack's `language` is not `ja`. |
+| `mode_unavailable` | No pack for the mode, the pack's `language` is not `ja`, or the pack's own `mode` is not the requested one. |
 | `speech_rate_invalid` | `speechRate` is not a finite number `>= 0`. |
 | `speech_rate_missing` | The mode needs a speech rate and none was given. |
 | `no_words` | After exclusions the text has no countable word. |
@@ -140,8 +141,9 @@ const tokenizer = createSudachiTokenizer({ splitMode: "A" }); // "A" (default), 
 |---|---|
 | Package | `@nikkei/napi-sudachi` 0.12.0, an optional peer dependency: install it yourself. It is a native module with no install script. |
 | Dictionary | Not shipped and never downloaded by this repository or its CI. Get a SudachiDict file from its official project, verify its checksum and read its licence, then set `SUDACHI_DICT_PATH` to the file. |
-| Missing dictionary | `createSudachiTokenizer` throws an `Error` naming `SUDACHI_DICT_PATH`. This check exists because the native module aborts the whole Node process, without a catchable error, when the file is missing. A corrupt dictionary file may still abort the process. |
-| `splitMode` | Sudachi's unit: `A` shortest (recommended for frequency bands), `B`, `C` longest. |
+| Missing dictionary | `createSudachiTokenizer` throws an `Error` naming `SUDACHI_DICT_PATH` when it is unset, missing or not a regular file. This check exists because the native module aborts the whole Node process, without a catchable error, in those cases. |
+| Corrupt dictionary | A file that exists but is not a valid SudachiDict still aborts the whole process (exit code 134) and the native module may print the path to stderr. Verify the checksum, create the tokenizer once at startup rather than on a request, and, if a server must survive it, run tokenization in a child process (a worker thread does not help). |
+| `splitMode` | `A`, `B` or `C`; anything else throws. |
 
 Tests that need the real dictionary skip when `SUDACHI_DICT_PATH` is unset.
 
@@ -155,5 +157,6 @@ Tests that need the real dictionary skip when `SUDACHI_DICT_PATH` is unset.
 
 - Input size is bounded by `maxChars` before any work; text is processed in one linear pass; no regular expression has nested quantifiers.
 - Data files are validated at the boundary and rejected with field names only. Pack keys are stored in `Map` objects, so a `__proto__` key is data.
-- Packs are untrusted input: a file above 64 MiB or with more than 2000000 entries is refused by default.
+- Packs are untrusted input: a file above 64 MiB or with more than 2000000 entries is refused by default. The loader opens the file once and checks the opened file: a device, a named pipe or a folder is refused (`not a regular file`) and a file that grows while being read is cut at the cap. `maxBytes` and `maxEntries` must be non-negative integers; `NaN` or a negative value is refused instead of turning the limit off.
+- Errors from the loaders carry no `cause`: a parse error or a system error would quote the file or its path. An unknown key of a file is counted, not quoted, so a key cannot inject text into logs.
 - The text is never logged and never appears in a result field other than as the caller's own variable.

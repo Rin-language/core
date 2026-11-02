@@ -201,11 +201,13 @@ File: `data/frequency/<language>/spoken.json` and `data/frequency/<language>/wri
 
 At least one of `words` and `kanji` is required. A band is an integer in `1..bandCount`, 1 being the most frequent (easiest). Unknown fields are refused. Entries absent from the list count as `unknownDifficulty` from the scoring file.
 
-Loading: `loadFrequencyPack(path, { maxBytes, maxEntries })`. Defaults: 64 MiB and 2000000 entries. Errors are a `PackError` whose `problems` name fields and counts, never a word.
+Loading: `loadFrequencyPack(path, { maxBytes, maxEntries })`. Defaults: 64 MiB and 2000000 entries; both must be non-negative integers. Errors are a `PackError` whose `problems` name fields and counts, never a word.
 
 | Problem text | Cause |
 |---|---|
-| `file not found`, `file not readable`, `not valid JSON`, `file too large` | The file itself. |
+| `file not found`, `file not readable`, `not a regular file`, `not valid JSON`, `file too large` | The file itself. A device, a pipe or a folder is `not a regular file`. |
+| `maxBytes must be a non-negative integer`, `maxEntries must be a non-negative integer` | An invalid option passed to the loader. |
+| `(root): N unknown key(s)` | The file has fields that are not in this table. The keys are counted, never quoted. |
 | `<field>: ...` | A field is missing, blank, of the wrong type or out of range. |
 | `words or kanji is required` | Neither map is present. |
 | `words: N invalid key(s)` / `kanji: N invalid key(s)` | A word key is empty, longer than 64 characters or has whitespace; a kanji key is not exactly one Han character. |

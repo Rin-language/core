@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -92,16 +93,65 @@ describe("loadFrequencyPack file limits", () => {
     ).toEqual(["file too large"]);
   });
 
-  it("reports a folder as not readable, not as missing", () => {
-    expect(problemsOf(() => loadFrequencyPack(tmpdir()))).toEqual([
-      "file not readable",
-    ]);
-  });
-
   it("names the file in the label, without its folder", () => {
     expect(
       packErrorOf(() => loadFrequencyPack("/nonexistent/folder/written.json"))
         .label,
     ).toBe("written.json");
+  });
+});
+
+describe("loadFrequencyPack on special files and bad limits", () => {
+  it("refuses a character device instead of reading it without limit", () => {
+    expect(
+      problemsOf(() => loadFrequencyPack("/dev/zero", { maxBytes: 1024 })),
+    ).toEqual(["not a regular file"]);
+  });
+
+  it("refuses a folder as not a regular file", () => {
+    expect(problemsOf(() => loadFrequencyPack(tmpdir()))).toEqual([
+      "not a regular file",
+    ]);
+  });
+
+  it("does not hang on a named pipe", () => {
+    const pipe = join(mkdtempSync(join(tmpdir(), "pack-")), "pipe.json");
+    execFileSync("mkfifo", [pipe]);
+    expect(problemsOf(() => loadFrequencyPack(pipe))).toEqual([
+      "not a regular file",
+    ]);
+  });
+
+  it.each([Number.NaN, -1, 1.5, Number.POSITIVE_INFINITY])(
+    "refuses maxBytes %s",
+    (maxBytes) => {
+      expect(
+        problemsOf(() =>
+          loadFrequencyPack(fixturePath("written"), { maxBytes }),
+        ),
+      ).toEqual(["maxBytes must be a non-negative integer"]);
+    },
+  );
+
+  it.each([Number.NaN, -1, 1.5])("refuses maxEntries %s", (maxEntries) => {
+    expect(
+      problemsOf(() =>
+        loadFrequencyPack(fixturePath("written"), { maxEntries }),
+      ),
+    ).toEqual(["maxEntries must be a non-negative integer"]);
+  });
+
+  it("attaches no cause that could quote the file or its path", () => {
+    expect(
+      packErrorOf(() => loadFrequencyPack("/nonexistent/secret-dir/x.json"))
+        .cause,
+    ).toBeUndefined();
+  });
+
+  it("attaches no cause that could quote the file content", () => {
+    expect(
+      packErrorOf(() => loadFrequencyPack(writeTemp('{"a": secretvalue}')))
+        .cause,
+    ).toBeUndefined();
   });
 });

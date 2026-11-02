@@ -1,6 +1,7 @@
-import { existsSync } from "node:fs";
+import { statSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { Token, Tokenizer } from "../types.js";
+import { isSudachiModule, type SudachiModule } from "./module-shape.js";
 
 export type SudachiSplitMode = "A" | "B" | "C";
 
@@ -9,37 +10,32 @@ export interface SudachiTokenizerOptions {
   readonly splitMode?: SudachiSplitMode;
 }
 
-interface Morpheme {
-  readonly surface: string;
-  readonly dictionaryForm: string;
-  readonly partOfSpeech: readonly string[];
-}
-
-interface SudachiModule {
-  Tokenizer: new () => {
-    tokenize(text: string, mode?: number): readonly Morpheme[];
-  };
-  SplitMode: { a(): number; b(): number; c(): number };
-}
-
 const SETUP_HINT =
   "Sudachi is unavailable: install @nikkei/napi-sudachi and point SUDACHI_DICT_PATH at a SudachiDict file";
 
 // The native module aborts the whole process, instead of throwing, when the
-// dictionary file is missing, so the file is checked before it is loaded.
-function assertDictionaryExists(): void {
+// dictionary is missing, is not a file or is not a valid dictionary. Only the
+// first two can be checked here: a corrupt dictionary still aborts.
+function assertDictionaryIsAFile(): void {
   const path = process.env.SUDACHI_DICT_PATH;
-  if (path === undefined || !existsSync(path)) throw new Error(SETUP_HINT);
+  if (path === undefined || !isRegularFile(path)) throw new Error(SETUP_HINT);
 }
 
-const isSudachiModule = (value: unknown): value is SudachiModule =>
-  typeof value === "object" &&
-  value !== null &&
-  "Tokenizer" in value &&
-  typeof value.Tokenizer === "function" &&
-  "SplitMode" in value &&
-  typeof value.SplitMode === "object" &&
-  value.SplitMode !== null;
+const SPLIT_MODES: readonly SudachiSplitMode[] = ["A", "B", "C"];
+
+function assertSplitMode(splitMode: SudachiSplitMode | undefined): void {
+  if (splitMode !== undefined && !SPLIT_MODES.includes(splitMode)) {
+    throw new Error("splitMode must be A, B or C");
+  }
+}
+
+function isRegularFile(path: string): boolean {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
 
 function loadModule(): SudachiModule {
   // CommonJS native package: createRequire avoids ESM named-import guessing.
@@ -52,12 +48,14 @@ function loadModule(): SudachiModule {
 
 /**
  * Loads the native module and the dictionary now, not at import. The error
- * never repeats a path or a text: the cause stays attached for debugging.
+ * messages never repeat a path or a text, but the native module itself may
+ * print the dictionary path to stderr when it aborts.
  */
 export function createSudachiTokenizer(
   options: SudachiTokenizerOptions = {},
 ): Tokenizer {
-  assertDictionaryExists();
+  assertSplitMode(options.splitMode);
+  assertDictionaryIsAFile();
   let sudachi: InstanceType<SudachiModule["Tokenizer"]>;
   let mode: number;
   try {

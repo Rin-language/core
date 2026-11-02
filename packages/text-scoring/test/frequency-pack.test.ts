@@ -81,3 +81,12 @@ describe("parseFrequencyPack limits", () => {
     expect(() => parseFrequencyPack(pack, "p.json")).toThrow(PackError);
   });
 });
+
+describe("parseFrequencyPack unknown keys", () => {
+  it("does not echo an unknown key, which could inject log lines", () => {
+    const raw = { ...asObject(fixture("written")), "\n[INFO] fake line": 1 };
+    expect(
+      packErrorOf(() => parseFrequencyPack(raw, "p.json")).message,
+    ).not.toContain("fake line");
+  });
+});

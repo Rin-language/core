@@ -70,3 +70,34 @@ describe("threshold problems", () => {
     ).toBeGreaterThan(0);
   });
 });
+
+describe("weight and chunk bounds", () => {
+  const withWeight = (vocabulary: number): unknown => {
+    const raw = asObject(shipped());
+    const weights = asObject(raw.weights);
+    return {
+      ...raw,
+      weights: {
+        ...weights,
+        written: { ...asObject(weights.written), vocabulary },
+      },
+    };
+  };
+
+  it("refuses a weight so large that sums could overflow", () => {
+    expect(
+      packErrorOf(() =>
+        parseScoringConfig(withWeight(1e308), "ja.json", LEVELS),
+      ).problems.length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("refuses a chunk size above what Sudachi can take", () => {
+    const raw = { ...asObject(shipped()), tokenizerChunkChars: 16001 };
+    expect(
+      packErrorOf(() =>
+        parseScoringConfig(raw, "ja.json", LEVELS),
+      ).problems.join(),
+    ).toContain("tokenizerChunkChars");
+  });
+});

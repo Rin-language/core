@@ -5,7 +5,7 @@ import {
   meanOrZero,
   selectLevel,
 } from "../difficulty.js";
-import { ScoringInputError } from "../errors.js";
+import { PackError, ScoringInputError } from "../errors.js";
 import type { FrequencyPack } from "../frequency-pack.js";
 import type { ScoringConfig } from "../scoring-config.js";
 import type {
@@ -61,17 +61,24 @@ function selectPack(
   input: ScoreInput,
   packs: JapaneseTextScorerOptions["packs"],
 ): FrequencyPack {
-  const pack = packs[input.mode];
-  if (pack === undefined || pack.language !== LANGUAGE) {
+  // The mode may come from untrusted JavaScript: own keys only.
+  const pack = Object.hasOwn(packs, input.mode) ? packs[input.mode] : undefined;
+  if (
+    pack === undefined ||
+    pack.language !== LANGUAGE ||
+    pack.mode !== input.mode
+  ) {
     throw new ScoringInputError("mode_unavailable");
   }
   return pack;
 }
 
 function assertTextAllowed(text: string, config: ScoringConfig): void {
-  if (text.trim().length === 0) throw new ScoringInputError("text_empty");
-  if (text.length > config.maxChars)
+  // Size first: trimming copies the whole text.
+  if (text.length > config.maxChars) {
     throw new ScoringInputError("text_too_long");
+  }
+  if (text.trim().length === 0) throw new ScoringInputError("text_empty");
 }
 
 function tokenizeSentence(
@@ -136,9 +143,10 @@ function scoreSentenceLength(
   sentenceTokens: readonly (readonly Token[])[],
   config: ScoringConfig,
 ): number {
-  const lengths = sentenceTokens.map(
-    (tokens) => tokens.filter((token) => !isPunctuation(token)).length,
-  );
+  // A line of symbols (a scene break) is not a sentence.
+  const lengths = sentenceTokens
+    .map((tokens) => tokens.filter((token) => !isPunctuation(token)).length)
+    .filter((length) => length > 0);
   return linearDifficulty(
     meanOrZero(lengths),
     config.sentence.easyLength,
@@ -192,9 +200,24 @@ function computeSubScores(
   };
 }
 
+function assertOptionsConsistent(options: JapaneseTextScorerOptions): void {
+  const { levels, config } = options;
+  const problems: string[] = [];
+  if (config.language !== LANGUAGE) problems.push("config is not for ja");
+  for (const mode of ["spoken", "written"] as const) {
+    if (config.thresholds[mode].length !== levels.length - 1) {
+      problems.push(
+        `thresholds.${mode} do not fit the ${levels.length} levels`,
+      );
+    }
+  }
+  if (problems.length > 0) throw new PackError("scorer options", problems);
+}
+
 export function createJapaneseTextScorer(
   options: JapaneseTextScorerOptions,
 ): TextScorer {
+  assertOptionsConsistent(options);
   const { levels, config } = options;
   return {
     language: LANGUAGE,

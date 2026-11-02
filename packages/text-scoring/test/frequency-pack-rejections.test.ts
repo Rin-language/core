@@ -135,9 +135,9 @@ describe("parseFrequencyPack rejections", () => {
   });
 
   it("reports an unknown top-level field", () => {
-    expect(hasProblem(problemsOf({ ...written(), extra: 1 }), "extra")).toBe(
-      true,
-    );
+    expect(
+      hasProblem(problemsOf({ ...written(), extra: 1 }), "unknown key"),
+    ).toBe(true);
   });
 
   it("reports a pack with more entries than the limit", () => {
