@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -71,5 +71,37 @@ describe("loadScoringConfig", () => {
     expect(
       problemsOf(() => loadScoringConfig("/nonexistent/ja.json", levels)),
     ).toEqual(["file not found"]);
+  });
+});
+
+describe("loadFrequencyPack file limits", () => {
+  const size = readFileSync(fixturePath("written")).length;
+
+  it("accepts a file of exactly maxBytes", () => {
+    expect(
+      loadFrequencyPack(fixturePath("written"), { maxBytes: size }).version,
+    ).toBe("fixture-written-1");
+  });
+
+  it("refuses every file when maxBytes is 0", () => {
+    expect(
+      problemsOf(() =>
+        loadFrequencyPack(fixturePath("written"), { maxBytes: 0 }),
+      ),
+    ).toEqual(["file too large"]);
+  });
+
+  it("reports a folder as not readable, not as missing", () => {
+    expect(problemsOf(() => loadFrequencyPack(tmpdir()))).toEqual([
+      "file not readable",
+    ]);
+  });
+
+  it("names the file in the label, without its folder", () => {
+    try {
+      loadFrequencyPack("/nonexistent/folder/written.json");
+    } catch (error) {
+      expect((error as PackError).label).toBe("written.json");
+    }
   });
 });

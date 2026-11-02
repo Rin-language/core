@@ -11,3 +11,7 @@ target/
 # Frequency lists and dictionaries are yours to supply and never committed.
 /data/frequency/
 /data/dictionaries/
+
+# Quality gate output
+.metrics/
+target/

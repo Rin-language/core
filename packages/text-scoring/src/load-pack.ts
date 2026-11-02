@@ -1,4 +1,5 @@
 import { readFileSync, statSync } from "node:fs";
+import { basename } from "node:path";
 import { PackError } from "./errors.js";
 import {
   type FrequencyPack,
@@ -47,7 +48,7 @@ export function loadFrequencyPack(
   path: string,
   options: LoadPackOptions = {},
 ): FrequencyPack {
-  const label = path.split("/").pop() ?? path;
+  const label = basename(path);
   const raw = readJsonFile(
     path,
     label,
@@ -56,13 +57,11 @@ export function loadFrequencyPack(
   return parseFrequencyPack(raw, label, options);
 }
 
-const labelOf = (path: string): string => path.split("/").pop() ?? path;
-
 export function loadScoringConfig(
   path: string,
   levels: readonly string[],
 ): ScoringConfig {
-  const label = labelOf(path);
+  const label = basename(path);
   return parseScoringConfig(
     readJsonFile(path, label, MAX_CONFIG_BYTES),
     label,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PackError } from "./errors.js";
 import type { ScoringMode } from "./types.js";
+import { toProblems } from "./zod-problems.js";
 
 export const DEFAULT_MAX_ENTRIES = 2_000_000;
 const MIN_BAND_COUNT = 2;
@@ -47,6 +48,34 @@ const PackFile = z.strictObject({
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+interface ReadEntries {
+  readonly entries: Map<string, number>;
+  readonly badKeys: number;
+  readonly badBands: number;
+}
+
+const isBand = (band: unknown, bandCount: number): band is number =>
+  typeof band === "number" &&
+  Number.isInteger(band) &&
+  band >= 1 &&
+  band <= bandCount;
+
+function scanEntries(
+  value: Readonly<Record<string, unknown>>,
+  bandCount: number,
+  isValidKey: (key: string) => boolean,
+): ReadEntries {
+  const entries = new Map<string, number>();
+  let badKeys = 0;
+  let badBands = 0;
+  for (const [key, band] of Object.entries(value)) {
+    if (!isValidKey(key)) badKeys += 1;
+    if (isBand(band, bandCount)) entries.set(key, band);
+    else badBands += 1;
+  }
+  return { entries, badKeys, badBands };
+}
+
 function readEntries(
   field: "words" | "kanji",
   value: unknown,
@@ -54,26 +83,16 @@ function readEntries(
   isValidKey: (key: string) => boolean,
   problems: string[],
 ): Map<string, number> {
-  const entries = new Map<string, number>();
-  if (value === undefined) return entries;
+  if (value === undefined) return new Map();
   if (!isPlainObject(value)) {
     problems.push(`${field}: must be an object`);
-    return entries;
+    return new Map();
   }
-  let badKeys = 0;
-  let badBands = 0;
-  for (const [key, band] of Object.entries(value)) {
-    if (!isValidKey(key)) badKeys += 1;
-    if (
-      !Number.isInteger(band) ||
-      (band as number) < 1 ||
-      (band as number) > bandCount
-    ) {
-      badBands += 1;
-    } else {
-      entries.set(key, band as number);
-    }
-  }
+  const { entries, badKeys, badBands } = scanEntries(
+    value,
+    bandCount,
+    isValidKey,
+  );
   if (badKeys > 0) problems.push(`${field}: ${badKeys} invalid key(s)`);
   if (badBands > 0) {
     problems.push(
@@ -82,6 +101,9 @@ function readEntries(
   }
   return entries;
 }
+
+const countEntries = (value: unknown): number =>
+  isPlainObject(value) ? Object.keys(value).length : 0;
 
 const isWordKey = (key: string): boolean =>
   key.length >= 1 && key.length <= MAX_WORD_LENGTH && !HAS_WHITESPACE.test(key);
@@ -96,12 +118,7 @@ export function parseFrequencyPack(
 ): FrequencyPack {
   const parsed = PackFile.safeParse(raw);
   if (!parsed.success) {
-    throw new PackError(
-      label,
-      parsed.error.issues.map(
-        (issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
-      ),
-    );
+    throw new PackError(label, toProblems(parsed.error));
   }
   const file = parsed.data;
   const problems: string[] = [];
@@ -109,10 +126,8 @@ export function parseFrequencyPack(
     problems.push("words or kanji is required");
   }
   const maxEntries = options.maxEntries ?? DEFAULT_MAX_ENTRIES;
-  const declared =
-    (isPlainObject(file.words) ? Object.keys(file.words).length : 0) +
-    (isPlainObject(file.kanji) ? Object.keys(file.kanji).length : 0);
-  if (declared > maxEntries) throw new PackError(label, ["too many entries"]);
+  if (countEntries(file.words) + countEntries(file.kanji) > maxEntries)
+    throw new PackError(label, ["too many entries"]);
   const words = readEntries(
     "words",
     file.words,

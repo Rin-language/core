@@ -41,7 +41,7 @@ function validateSpeechRate(input: ScoreInput, weight: number): void {
   const { speechRate } = input;
   if (
     speechRate !== undefined &&
-    (!Number.isFinite(speechRate) || speechRate < 0)
+    !(Number.isFinite(speechRate) && speechRate >= 0)
   ) {
     throw new ScoringInputError("speech_rate_invalid");
   }
@@ -50,108 +50,153 @@ function validateSpeechRate(input: ScoreInput, weight: number): void {
   }
 }
 
+function selectPack(
+  input: ScoreInput,
+  packs: JapaneseTextScorerOptions["packs"],
+): FrequencyPack {
+  const pack = packs[input.mode];
+  if (pack === undefined || pack.language !== LANGUAGE) {
+    throw new ScoringInputError("mode_unavailable");
+  }
+  return pack;
+}
+
+function assertTextAllowed(text: string, config: ScoringConfig): void {
+  if (text.trim().length === 0) throw new ScoringInputError("text_empty");
+  if (text.length > config.maxChars)
+    throw new ScoringInputError("text_too_long");
+}
+
+function tokenizeSentence(
+  sentence: string,
+  tokenizer: Tokenizer,
+  chunkChars: number,
+): readonly Token[] {
+  return splitIntoChunks(sentence, chunkChars).flatMap((chunk) =>
+    tokenizer.tokenize(chunk),
+  );
+}
+
+function countedLemmas(
+  tokens: readonly Token[],
+  excluded: ReadonlySet<string>,
+): ReadonlySet<string> {
+  const lemmas = new Set<string>();
+  for (const token of tokens) {
+    const [mainPartOfSpeech = ""] = token.partOfSpeech;
+    const isExcluded = excluded.has(mainPartOfSpeech);
+    if (isExcluded || isPunctuation(token)) continue;
+    lemmas.add(token.lemma === "" ? token.surface : token.lemma);
+  }
+  return lemmas;
+}
+
+function scoreVocabulary(
+  tokens: readonly Token[],
+  pack: FrequencyPack,
+  config: ScoringConfig,
+): number {
+  const lemmas = countedLemmas(tokens, config.excludedPartsOfSpeech);
+  if (lemmas.size === 0) throw new ScoringInputError("no_words");
+  return meanOrZero(
+    [...lemmas].map((lemma) =>
+      bandDifficulty(
+        pack.words.get(lemma),
+        pack.bandCount,
+        config.unknownDifficulty,
+      ),
+    ),
+  );
+}
+
+function scoreKanji(
+  text: string,
+  pack: FrequencyPack,
+  config: ScoringConfig,
+): number {
+  return meanOrZero(
+    extractKanji(text).map((kanji) =>
+      bandDifficulty(
+        pack.kanji.get(kanji),
+        pack.bandCount,
+        config.unknownDifficulty,
+      ),
+    ),
+  );
+}
+
+function scoreSentenceLength(
+  sentenceTokens: readonly (readonly Token[])[],
+  config: ScoringConfig,
+): number {
+  const lengths = sentenceTokens.map(
+    (tokens) => tokens.filter((token) => !isPunctuation(token)).length,
+  );
+  return linearDifficulty(
+    meanOrZero(lengths),
+    config.sentence.easyLength,
+    config.sentence.hardLength,
+  );
+}
+
+function scoreDialogue(
+  dialogueCharacters: number,
+  totalCharacters: number,
+): number {
+  return 1 - dialogueCharacters / totalCharacters;
+}
+
+function scoreSpeechRate(
+  input: ScoreInput,
+  weight: number,
+  config: ScoringConfig,
+): number | null {
+  if (weight <= 0 || input.speechRate === undefined) return null;
+  return linearDifficulty(
+    input.speechRate,
+    config.speechRate.easy,
+    config.speechRate.hard,
+  );
+}
+
+function computeSubScores(
+  input: ScoreInput,
+  pack: FrequencyPack,
+  options: JapaneseTextScorerOptions,
+): SubScores {
+  const { config, tokenizer } = options;
+  const structure = analyzeText(input.text);
+  const sentenceTokens = structure.sentences.map((sentence) =>
+    tokenizeSentence(sentence, tokenizer, config.tokenizerChunkChars),
+  );
+  return {
+    vocabulary: scoreVocabulary(sentenceTokens.flat(), pack, config),
+    kanji: scoreKanji(input.text, pack, config),
+    sentenceLength: scoreSentenceLength(sentenceTokens, config),
+    dialogue: scoreDialogue(
+      structure.dialogueCharacters,
+      structure.totalCharacters,
+    ),
+    speechRate: scoreSpeechRate(
+      input,
+      config.weights[input.mode].speechRate,
+      config,
+    ),
+  };
+}
+
 export function createJapaneseTextScorer(
   options: JapaneseTextScorerOptions,
 ): TextScorer {
-  const { tokenizer, levels, config } = options;
-
-  function tokenizeSentence(sentence: string): readonly Token[] {
-    return splitIntoChunks(sentence, config.tokenizerChunkChars).flatMap(
-      (chunk) => tokenizer.tokenize(chunk),
-    );
-  }
-
-  function scoreVocabulary(
-    tokens: readonly Token[],
-    pack: FrequencyPack,
-  ): number {
-    const lemmas = new Set<string>();
-    for (const token of tokens) {
-      if (config.excludedPartsOfSpeech.has(token.partOfSpeech[0] ?? ""))
-        continue;
-      if (isPunctuation(token)) continue;
-      lemmas.add(token.lemma === "" ? token.surface : token.lemma);
-    }
-    if (lemmas.size === 0) throw new ScoringInputError("no_words");
-    return meanOrZero(
-      [...lemmas].map((lemma) =>
-        bandDifficulty(
-          pack.words.get(lemma),
-          pack.bandCount,
-          config.unknownDifficulty,
-        ),
-      ),
-    );
-  }
-
-  function scoreKanji(text: string, pack: FrequencyPack): number {
-    return meanOrZero(
-      extractKanji(text).map((kanji) =>
-        bandDifficulty(
-          pack.kanji.get(kanji),
-          pack.bandCount,
-          config.unknownDifficulty,
-        ),
-      ),
-    );
-  }
-
-  function scoreSentenceLength(
-    sentenceTokens: readonly (readonly Token[])[],
-  ): number {
-    const lengths = sentenceTokens.map(
-      (tokens) => tokens.filter((token) => !isPunctuation(token)).length,
-    );
-    return linearDifficulty(
-      meanOrZero(lengths),
-      config.sentence.easyLength,
-      config.sentence.hardLength,
-    );
-  }
-
-  function scoreDialogue(
-    dialogueCharacters: number,
-    totalCharacters: number,
-  ): number {
-    return totalCharacters === 0 ? 1 : 1 - dialogueCharacters / totalCharacters;
-  }
-
-  function scoreSpeechRate(input: ScoreInput, weight: number): number | null {
-    if (weight <= 0 || input.speechRate === undefined) return null;
-    return linearDifficulty(
-      input.speechRate,
-      config.speechRate.easy,
-      config.speechRate.hard,
-    );
-  }
-
+  const { levels, config } = options;
   return {
     language: LANGUAGE,
     score(input: ScoreInput): ScoreResult {
-      if (input.text.trim().length === 0)
-        throw new ScoringInputError("text_empty");
-      if (input.text.length > config.maxChars) {
-        throw new ScoringInputError("text_too_long");
-      }
-      const pack = options.packs[input.mode];
-      if (pack === undefined || pack.language !== LANGUAGE) {
-        throw new ScoringInputError("mode_unavailable");
-      }
+      assertTextAllowed(input.text, config);
+      const pack = selectPack(input, options.packs);
       const weights = config.weights[input.mode];
       validateSpeechRate(input, weights.speechRate);
-
-      const structure = analyzeText(input.text);
-      const sentenceTokens = structure.sentences.map(tokenizeSentence);
-      const subScores: SubScores = {
-        vocabulary: scoreVocabulary(sentenceTokens.flat(), pack),
-        kanji: scoreKanji(input.text, pack),
-        sentenceLength: scoreSentenceLength(sentenceTokens),
-        dialogue: scoreDialogue(
-          structure.dialogueCharacters,
-          structure.totalCharacters,
-        ),
-        speechRate: scoreSpeechRate(input, weights.speechRate),
-      };
+      const subScores = computeSubScores(input, pack, options);
       const score = combineScores(subScores, weights);
       return {
         score,

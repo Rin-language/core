@@ -87,3 +87,9 @@ describe("selectLevel", () => {
     expect(selectLevel(0.99, levels, thresholds)).toBe("N1");
   });
 });
+
+describe("selectLevel with surplus thresholds", () => {
+  it("never goes past the highest level", () => {
+    expect(selectLevel(0.99, ["A", "B"], [0.1, 0.2, 0.3])).toBe("B");
+  });
+});

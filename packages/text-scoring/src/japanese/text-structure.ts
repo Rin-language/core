@@ -12,6 +12,15 @@ export interface TextStructure {
   readonly totalCharacters: number;
 }
 
+const isBracket = (character: string): boolean =>
+  OPENING_QUOTES.has(character) || CLOSING_QUOTES.has(character);
+
+function nextDepth(character: string, depth: number): number {
+  if (OPENING_QUOTES.has(character)) return depth + 1;
+  if (CLOSING_QUOTES.has(character)) return Math.max(0, depth - 1);
+  return depth;
+}
+
 /**
  * One linear pass. A sentence ends at a terminator outside any quote or at a
  * newline; a newline also closes every open quote, so an unbalanced 「 spoils
@@ -38,13 +47,8 @@ export function analyzeText(text: string): TextStructure {
     current += character;
     if (WHITESPACE.test(character)) continue;
     totalCharacters += 1;
-    if (OPENING_QUOTES.has(character)) {
-      depth += 1;
-    } else if (CLOSING_QUOTES.has(character)) {
-      depth = Math.max(0, depth - 1);
-    } else if (depth > 0) {
-      dialogueCharacters += 1;
-    }
+    if (depth > 0 && !isBracket(character)) dialogueCharacters += 1;
+    depth = nextDepth(character, depth);
     if (depth === 0 && SENTENCE_ENDINGS.has(character)) endSentence();
   }
   endSentence();
@@ -83,7 +87,6 @@ export function splitIntoChunks(
   sentence: string,
   maxChars: number,
 ): readonly string[] {
-  if (sentence.length <= maxChars) return [sentence];
   const chunks: string[] = [];
   let current = "";
   for (const character of sentence) {

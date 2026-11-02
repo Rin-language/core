@@ -262,3 +262,39 @@ describe("tokenizer input", () => {
     ).toBe(1);
   });
 });
+
+describe("exact values and small weights", () => {
+  it("measures dialogue as the share of the text between quotes", () => {
+    expect(score("「私は行きます。」").subScores.dialogue).toBeCloseTo(
+      1 - 7 / 9,
+      10,
+    );
+  });
+
+  it("requires a speech rate for a weight below 1", () => {
+    const { scorer } = build({
+      ...shipped,
+      weights: {
+        ...shipped.weights,
+        spoken: { ...shipped.weights.spoken, speechRate: 0.5 },
+      },
+    });
+    expect(problemOf(() => scorer.score({ text: EASY, mode: "spoken" }))).toBe(
+      "speech_rate_missing",
+    );
+  });
+
+  it("scores the speech rate for a weight below 1", () => {
+    const { scorer } = build({
+      ...shipped,
+      weights: {
+        ...shipped.weights,
+        spoken: { ...shipped.weights.spoken, speechRate: 0.5 },
+      },
+    });
+    expect(
+      scorer.score({ text: EASY, mode: "spoken", speechRate: 500 }).subScores
+        .speechRate,
+    ).toBe(1);
+  });
+});

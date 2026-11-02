@@ -62,3 +62,24 @@ describe("parseFrequencyPack", () => {
     }
   });
 });
+
+describe("parseFrequencyPack limits", () => {
+  const raw = (): unknown => fixture("written");
+
+  it("accepts exactly maxEntries entries", () => {
+    expect(
+      parseFrequencyPack(raw(), "p.json", { maxEntries: 22 }).words.size,
+    ).toBe(12);
+  });
+
+  it("refuses everything when maxEntries is 0", () => {
+    expect(() =>
+      parseFrequencyPack(raw(), "p.json", { maxEntries: 0 }),
+    ).toThrow(PackError);
+  });
+
+  it("refuses an empty word key", () => {
+    const pack = { ...(raw() as object), words: { "": 1 } };
+    expect(() => parseFrequencyPack(pack, "p.json")).toThrow(PackError);
+  });
+});

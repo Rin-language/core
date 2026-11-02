@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PackError } from "./errors.js";
 import type { ScoringMode } from "./types.js";
+import { toProblems } from "./zod-problems.js";
 
 const MAX_CHARS_LIMIT = 10_000_000;
 const MIN_CHUNK_CHARS = 100;
@@ -104,12 +105,7 @@ export function parseScoringConfig(
 ): ScoringConfig {
   const parsed = ConfigFile.safeParse(raw);
   if (!parsed.success) {
-    throw new PackError(
-      label,
-      parsed.error.issues.map(
-        (issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
-      ),
-    );
+    throw new PackError(label, toProblems(parsed.error));
   }
   const file = parsed.data;
   const problems = [

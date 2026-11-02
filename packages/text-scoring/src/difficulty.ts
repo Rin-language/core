@@ -48,5 +48,5 @@ export function selectLevel(
   thresholds: readonly number[],
 ): string {
   const index = thresholds.filter((threshold) => score >= threshold).length;
-  return levels[index] ?? levels[levels.length - 1] ?? "";
+  return levels[Math.min(index, levels.length - 1)] ?? "";
 }

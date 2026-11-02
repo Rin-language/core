@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import type { PackError } from "../src/errors.js";
 import { parseScoringConfig } from "../src/scoring-config.js";
 
 const LEVELS = ["N5", "N4", "N3", "N2", "N1"];
@@ -46,5 +47,32 @@ describe("shipped data/scoring/ja.json", () => {
         LEVELS,
       ).excludedPartsOfSpeech.has("助詞"),
     ).toBe(true);
+  });
+});
+
+describe("threshold problems", () => {
+  const withThresholds = (written: number[]): unknown => {
+    const raw = shipped() as { thresholds: Record<string, number[]> };
+    return { ...raw, thresholds: { ...raw.thresholds, written } };
+  };
+  const problems = (raw: unknown): readonly string[] => {
+    try {
+      parseScoringConfig(raw, "ja.json", LEVELS);
+    } catch (error) {
+      return (error as PackError).problems;
+    }
+    return [];
+  };
+
+  it("states how many thresholds the scale needs", () => {
+    expect(problems(withThresholds([0.5]))).toContain(
+      "thresholds.written: expected 4 values",
+    );
+  });
+
+  it("refuses two equal thresholds", () => {
+    expect(
+      problems(withThresholds([0.2, 0.2, 0.6, 0.8])).length,
+    ).toBeGreaterThan(0);
   });
 });

@@ -104,3 +104,13 @@ describe("performance", () => {
     expect(performance.now() - start).toBeLessThan(1000);
   });
 });
+
+describe("splitIntoChunks edge cases", () => {
+  it("returns no chunk for an empty sentence", () => {
+    expect(splitIntoChunks("", 5)).toEqual([]);
+  });
+
+  it("keeps a sentence of exactly the limit in one chunk", () => {
+    expect(splitIntoChunks("あいう", 3)).toEqual(["あいう"]);
+  });
+});
