@@ -5,8 +5,10 @@ import {
   type ParsePackOptions,
   parseFrequencyPack,
 } from "./frequency-pack.js";
+import { parseScoringConfig, type ScoringConfig } from "./scoring-config.js";
 
 const DEFAULT_MAX_PACK_BYTES = 64 * 1024 * 1024;
+const MAX_CONFIG_BYTES = 1024 * 1024;
 
 export interface LoadPackOptions extends ParsePackOptions {
   readonly maxBytes?: number;
@@ -52,4 +54,18 @@ export function loadFrequencyPack(
     options.maxBytes ?? DEFAULT_MAX_PACK_BYTES,
   );
   return parseFrequencyPack(raw, label, options);
+}
+
+const labelOf = (path: string): string => path.split("/").pop() ?? path;
+
+export function loadScoringConfig(
+  path: string,
+  levels: readonly string[],
+): ScoringConfig {
+  const label = labelOf(path);
+  return parseScoringConfig(
+    readJsonFile(path, label, MAX_CONFIG_BYTES),
+    label,
+    levels,
+  );
 }

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PackError } from "../src/errors.js";
-import { loadFrequencyPack } from "../src/load-pack.js";
+import { loadFrequencyPack, loadScoringConfig } from "../src/load-pack.js";
 
 const fixturePath = (name: string): string =>
   new URL(`./fixtures/frequency/ja/${name}.json`, import.meta.url).pathname;
@@ -55,5 +55,21 @@ describe("loadFrequencyPack", () => {
     expect(
       problemsOf(() => loadFrequencyPack(writeTemp('{"format":2}'))).length,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe("loadScoringConfig", () => {
+  const shippedPath = new URL("../../../data/scoring/ja.json", import.meta.url)
+    .pathname;
+  const levels = ["N5", "N4", "N3", "N2", "N1"];
+
+  it("loads the shipped Japanese scoring file", () => {
+    expect(loadScoringConfig(shippedPath, levels).language).toBe("ja");
+  });
+
+  it("reports a missing file", () => {
+    expect(
+      problemsOf(() => loadScoringConfig("/nonexistent/ja.json", levels)),
+    ).toEqual(["file not found"]);
   });
 });
