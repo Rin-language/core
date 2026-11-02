@@ -32,11 +32,22 @@ function assertDictionaryExists(): void {
   if (path === undefined || !existsSync(path)) throw new Error(SETUP_HINT);
 }
 
+const isSudachiModule = (value: unknown): value is SudachiModule =>
+  typeof value === "object" &&
+  value !== null &&
+  "Tokenizer" in value &&
+  typeof value.Tokenizer === "function" &&
+  "SplitMode" in value &&
+  typeof value.SplitMode === "object" &&
+  value.SplitMode !== null;
+
 function loadModule(): SudachiModule {
   // CommonJS native package: createRequire avoids ESM named-import guessing.
-  return createRequire(import.meta.url)(
+  const loaded: unknown = createRequire(import.meta.url)(
     "@nikkei/napi-sudachi",
-  ) as SudachiModule;
+  );
+  if (!isSudachiModule(loaded)) throw new Error("unexpected module shape");
+  return loaded;
 }
 
 /**

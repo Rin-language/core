@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { PackError } from "../src/errors.js";
 import { parseScoringConfig } from "../src/scoring-config.js";
+import { asObject } from "./fixtures/helpers.js";
 
 type RawConfig = Record<string, unknown>;
 
@@ -15,7 +16,7 @@ const shipped = (): unknown =>
     ),
   );
 
-const clone = (): RawConfig => structuredClone(shipped()) as RawConfig;
+const clone = (): RawConfig => asObject(structuredClone(shipped()));
 
 const problemsOf = (
   raw: unknown,
@@ -39,8 +40,7 @@ const without = (raw: RawConfig, ...keys: readonly string[]): RawConfig => {
   return copy;
 };
 
-const objectAt = (raw: RawConfig, key: string): RawConfig =>
-  raw[key] as RawConfig;
+const objectAt = (raw: RawConfig, key: string): RawConfig => asObject(raw[key]);
 
 const withNested = (
   raw: RawConfig,

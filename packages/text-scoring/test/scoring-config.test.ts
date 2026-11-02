@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { PackError } from "../src/errors.js";
 import { parseScoringConfig } from "../src/scoring-config.js";
+import { asObject, packErrorOf } from "./fixtures/helpers.js";
 
 const LEVELS = ["N5", "N4", "N3", "N2", "N1"];
 
@@ -52,17 +52,11 @@ describe("shipped data/scoring/ja.json", () => {
 
 describe("threshold problems", () => {
   const withThresholds = (written: number[]): unknown => {
-    const raw = shipped() as { thresholds: Record<string, number[]> };
-    return { ...raw, thresholds: { ...raw.thresholds, written } };
+    const raw = asObject(shipped());
+    return { ...raw, thresholds: { ...asObject(raw.thresholds), written } };
   };
-  const problems = (raw: unknown): readonly string[] => {
-    try {
-      parseScoringConfig(raw, "ja.json", LEVELS);
-    } catch (error) {
-      return (error as PackError).problems;
-    }
-    return [];
-  };
+  const problems = (raw: unknown): readonly string[] =>
+    packErrorOf(() => parseScoringConfig(raw, "ja.json", LEVELS)).problems;
 
   it("states how many thresholds the scale needs", () => {
     expect(problems(withThresholds([0.5]))).toContain(

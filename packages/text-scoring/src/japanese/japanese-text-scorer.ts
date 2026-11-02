@@ -24,6 +24,13 @@ import {
 } from "./text-structure.js";
 
 const LANGUAGE = "ja";
+const SUB_SCORE_NAMES = [
+  "vocabulary",
+  "kanji",
+  "sentenceLength",
+  "dialogue",
+  "speechRate",
+] as const;
 const HAS_LETTER_OR_NUMBER = /[\p{L}\p{N}]/u;
 
 export interface JapaneseTextScorerOptions {
@@ -197,7 +204,7 @@ export function createJapaneseTextScorer(
       const weights = config.weights[input.mode];
       validateSpeechRate(input, weights.speechRate);
       const subScores = computeSubScores(input, pack, options);
-      const score = combineScores(subScores, weights);
+      const score = combineScores(SUB_SCORE_NAMES, subScores, weights);
       return {
         score,
         subScores,

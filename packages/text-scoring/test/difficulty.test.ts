@@ -57,17 +57,21 @@ describe("meanOrZero", () => {
   });
 });
 
+const NAMES = ["a", "b"] as const;
+
 describe("combineScores", () => {
   it("weights the sub-scores", () => {
-    expect(combineScores({ a: 1, b: 0 }, { a: 3, b: 1 })).toBe(0.75);
+    expect(combineScores(NAMES, { a: 1, b: 0 }, { a: 3, b: 1 })).toBe(0.75);
   });
 
   it("ignores a null sub-score whose weight is 0", () => {
-    expect(combineScores({ a: 1, b: null }, { a: 1, b: 0 })).toBe(1);
+    expect(combineScores(NAMES, { a: 1, b: null }, { a: 1, b: 0 })).toBe(1);
   });
 
   it("throws on a null sub-score whose weight is above 0", () => {
-    expect(() => combineScores({ a: 1, b: null }, { a: 1, b: 1 })).toThrow();
+    expect(() =>
+      combineScores(NAMES, { a: 1, b: null }, { a: 1, b: 1 }),
+    ).toThrow();
   });
 });
 

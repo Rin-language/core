@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ScoringInputError } from "../src/errors.js";
-import { parseFrequencyPack } from "../src/frequency-pack.js";
+import {
+  type FrequencyPack,
+  parseFrequencyPack,
+} from "../src/frequency-pack.js";
 import { createJapaneseTextScorer } from "../src/japanese/japanese-text-scorer.js";
 import {
   parseScoringConfig,
@@ -30,7 +33,10 @@ const packs = {
   ),
 };
 
-function build(config: ScoringConfig = shipped, available = packs) {
+function build(
+  config: ScoringConfig = shipped,
+  available: Partial<Record<ScoringMode, FrequencyPack>> = packs,
+) {
   const tokenizer = new FakeTokenizer(JAPANESE_LEXICON);
   const scorer = createJapaneseTextScorer({
     tokenizer,
@@ -212,9 +218,7 @@ describe("refused input", () => {
   });
 
   it("refuses a mode with no list", () => {
-    const { scorer } = build(shipped, {
-      written: packs.written,
-    } as typeof packs);
+    const { scorer } = build(shipped, { written: packs.written });
     expect(
       problemOf(() =>
         scorer.score({ text: EASY, mode: "spoken", speechRate: 300 }),
@@ -236,11 +240,11 @@ describe("refused input", () => {
   );
 
   it("never puts the text in the error message", () => {
-    try {
-      score("秘密の文", "spoken", Number.NaN);
-    } catch (error) {
-      expect((error as Error).message).not.toContain("秘密");
-    }
+    expect(() => score("秘密の文", "spoken", Number.NaN)).toThrowError(
+      expect.objectContaining({
+        message: expect.not.stringContaining("秘密"),
+      }),
+    );
   });
 });
 

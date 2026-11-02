@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { PackError } from "../src/errors.js";
 import { parseFrequencyPack } from "../src/frequency-pack.js";
+import { asObject, packErrorOf } from "./fixtures/helpers.js";
 
 const fixture = (name: string): unknown =>
   JSON.parse(
@@ -53,13 +54,10 @@ describe("parseFrequencyPack", () => {
   });
 
   it("does not put a word in the message of a rejected pack", () => {
-    const raw = { ...(fixture("written") as object), words: { 秘密の語: 99 } };
-    expect(() => parseFrequencyPack(raw, "p.json")).toThrow(PackError);
-    try {
-      parseFrequencyPack(raw, "p.json");
-    } catch (error) {
-      expect((error as PackError).message).not.toContain("秘密の語");
-    }
+    const raw = { ...asObject(fixture("written")), words: { 秘密の語: 99 } };
+    expect(
+      packErrorOf(() => parseFrequencyPack(raw, "p.json")).message,
+    ).not.toContain("秘密の語");
   });
 });
 
@@ -79,7 +77,7 @@ describe("parseFrequencyPack limits", () => {
   });
 
   it("refuses an empty word key", () => {
-    const pack = { ...(raw() as object), words: { "": 1 } };
+    const pack = { ...asObject(raw()), words: { "": 1 } };
     expect(() => parseFrequencyPack(pack, "p.json")).toThrow(PackError);
   });
 });

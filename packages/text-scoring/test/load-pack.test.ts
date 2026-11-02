@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PackError } from "../src/errors.js";
 import { loadFrequencyPack, loadScoringConfig } from "../src/load-pack.js";
+import { packErrorOf } from "./fixtures/helpers.js";
 
 const fixturePath = (name: string): string =>
   new URL(`./fixtures/frequency/ja/${name}.json`, import.meta.url).pathname;
@@ -98,10 +99,9 @@ describe("loadFrequencyPack file limits", () => {
   });
 
   it("names the file in the label, without its folder", () => {
-    try {
-      loadFrequencyPack("/nonexistent/folder/written.json");
-    } catch (error) {
-      expect((error as PackError).label).toBe("written.json");
-    }
+    expect(
+      packErrorOf(() => loadFrequencyPack("/nonexistent/folder/written.json"))
+        .label,
+    ).toBe("written.json");
   });
 });

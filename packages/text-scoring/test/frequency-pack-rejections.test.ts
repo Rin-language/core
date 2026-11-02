@@ -5,6 +5,7 @@ import {
   type ParsePackOptions,
   parseFrequencyPack,
 } from "../src/frequency-pack.js";
+import { asObject } from "./fixtures/helpers.js";
 
 type RawPack = Record<string, unknown>;
 type EntryField = "words" | "kanji";
@@ -17,7 +18,7 @@ const fixture = (name: string): unknown =>
     ),
   );
 
-const written = (): RawPack => fixture("written") as RawPack;
+const written = (): RawPack => asObject(fixture("written"));
 
 const problemsOf = (
   raw: unknown,
@@ -42,7 +43,7 @@ const without = (raw: RawPack, ...keys: readonly string[]): RawPack => {
 };
 
 const entriesOf = (raw: RawPack, field: EntryField): RawPack =>
-  raw[field] as RawPack;
+  asObject(raw[field]);
 
 const withEntry = (
   raw: RawPack,
