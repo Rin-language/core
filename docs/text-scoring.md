@@ -142,6 +142,7 @@ const tokenizer = createSudachiTokenizer({ splitMode: "A" }); // "A" (default), 
 | Package | `@nikkei/napi-sudachi` 0.12.0, an optional peer dependency: install it yourself. It is a native module with no install script. |
 | Dictionary | Not shipped and never downloaded by this repository or its CI. Get a SudachiDict file from its official project, verify its checksum and read its licence, then set `SUDACHI_DICT_PATH` to the file. |
 | Missing dictionary | `createSudachiTokenizer` throws an `Error` naming `SUDACHI_DICT_PATH` when it is unset, missing or not a regular file. This check exists because the native module aborts the whole Node process, without a catchable error, in those cases. |
+| Newer dictionary format | A SudachiDict built in the newer format (its file starts with the text `SudachiBinaryDic`, seen on the release dated 2026-10-15) is refused with an `Error` before loading, because the engine inside `@nikkei/napi-sudachi` 0.12.0 aborts the process on it (`Invalid header version`). Use an older SudachiDict release. |
 | Corrupt dictionary | A file that exists but is not a valid SudachiDict still aborts the whole process (exit code 134) and the native module may print the path to stderr. Verify the checksum, create the tokenizer once at startup rather than on a request, and, if a server must survive it, run tokenization in a child process (a worker thread does not help). |
 | `splitMode` | `A`, `B` or `C`; anything else throws. |
 

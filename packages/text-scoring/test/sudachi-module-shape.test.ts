@@ -8,6 +8,11 @@ describe("isSudachiModule", () => {
     expect(isSudachiModule(valid)).toBe(true);
   });
 
+  it("accepts a SplitMode that is a class with static methods, as in the real module", () => {
+    const SplitMode = Object.assign(() => undefined, { a: () => 0 });
+    expect(isSudachiModule({ Tokenizer: class {}, SplitMode })).toBe(true);
+  });
+
   it.each([
     ["null", null],
     ["a string", "module"],

@@ -12,6 +12,9 @@ export interface SudachiModule {
   SplitMode: { a(): number; b(): number; c(): number };
 }
 
+const isObjectOrClass = (value: unknown): boolean =>
+  (typeof value === "object" && value !== null) || typeof value === "function";
+
 /** Checks the parts of the native module this package calls, nothing more. */
 export const isSudachiModule = (value: unknown): value is SudachiModule =>
   typeof value === "object" &&
@@ -19,5 +22,4 @@ export const isSudachiModule = (value: unknown): value is SudachiModule =>
   "Tokenizer" in value &&
   typeof value.Tokenizer === "function" &&
   "SplitMode" in value &&
-  typeof value.SplitMode === "object" &&
-  value.SplitMode !== null;
+  isObjectOrClass(value.SplitMode);
