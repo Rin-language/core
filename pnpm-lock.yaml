@@ -72,6 +72,16 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
 
+  packages/text-scoring:
+    dependencies:
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@nikkei/napi-sudachi':
+        specifier: 0.12.0
+        version: 0.12.0
+
   packages/web:
     dependencies:
       '@rin-language/contract':
@@ -515,6 +525,42 @@ packages:
 
   '@marijn/find-cluster-break@1.0.4':
     resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
+
+  '@nikkei/napi-sudachi-darwin-arm64@0.12.0':
+    resolution: {integrity: sha512-vyDg3tCFzBgQ3LQbSs42KG9I8LrhKu1qNnjgA7o3bl5UhPlHUZ8U0hP/CKzZOlWOu5PmL/YpofcNvizDP9vWpw==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@nikkei/napi-sudachi-darwin-x64@0.12.0':
+    resolution: {integrity: sha512-8UfDEtNpliGtM4LyK3nMP69pFsDpm5XQKtvGlkzKet5OqsGno9ESXpWK2wXUPlp1ySXFYW00e5aGCZ/MK2J+bw==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@nikkei/napi-sudachi-linux-arm64-gnu@0.12.0':
+    resolution: {integrity: sha512-xwXgIkOJLi+zVJPE2MEQn49DhVxxjgvscb5sUNRvKjL3lIC/HYr9maSxKvaO7LRhWDWG81w9ERo+X0TmJYpVGg==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@nikkei/napi-sudachi-linux-x64-gnu@0.12.0':
+    resolution: {integrity: sha512-6cW97I73ipVcFw6HnMnKOgcl416lIHxtvaWGywBF7Meymr/ZY6m/fkuWDEevIY7izeNNvpiyULBVylOXZ8Y9/w==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@nikkei/napi-sudachi-win32-x64-msvc@0.12.0':
+    resolution: {integrity: sha512-tXVxu3t2MOF/gP9YxyOb8M94VL8x8imtiHTuosFVGsO2eQBNJ3/1gaH+2E/eLpqPt3ioiRReLxRjhIpgahPnBA==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [win32]
+
+  '@nikkei/napi-sudachi@0.12.0':
+    resolution: {integrity: sha512-OEyWr3EXpFns3QIGtMDdzgT0Bs5O2kmEyV7g37xsworWHInFj4Y+jC4Eanr9HuRGX/jeLPMSa4oCm60AQfZUEQ==}
+    engines: {node: '>=20'}
 
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
@@ -1568,6 +1614,9 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
+  pend@1.2.0:
+    resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -2019,6 +2068,10 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
+  yauzl@3.4.0:
+    resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==}
+    engines: {node: '>=12'}
+
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -2458,6 +2511,31 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.4':
     optional: true
+
+  '@nikkei/napi-sudachi-darwin-arm64@0.12.0':
+    optional: true
+
+  '@nikkei/napi-sudachi-darwin-x64@0.12.0':
+    optional: true
+
+  '@nikkei/napi-sudachi-linux-arm64-gnu@0.12.0':
+    optional: true
+
+  '@nikkei/napi-sudachi-linux-x64-gnu@0.12.0':
+    optional: true
+
+  '@nikkei/napi-sudachi-win32-x64-msvc@0.12.0':
+    optional: true
+
+  '@nikkei/napi-sudachi@0.12.0':
+    dependencies:
+      yauzl: 3.4.0
+    optionalDependencies:
+      '@nikkei/napi-sudachi-darwin-arm64': 0.12.0
+      '@nikkei/napi-sudachi-darwin-x64': 0.12.0
+      '@nikkei/napi-sudachi-linux-arm64-gnu': 0.12.0
+      '@nikkei/napi-sudachi-linux-x64-gnu': 0.12.0
+      '@nikkei/napi-sudachi-win32-x64-msvc': 0.12.0
 
   '@oxc-project/types@0.155.0': {}
 
@@ -4104,6 +4182,8 @@ snapshots:
   pathe@2.0.3:
     optional: true
 
+  pend@1.2.0: {}
+
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
@@ -4568,6 +4648,10 @@ snapshots:
 
   yaml@2.9.1:
     optional: true
+
+  yauzl@3.4.0:
+    dependencies:
+      pend: 1.2.0
 
   zod@4.6.7: {}
 

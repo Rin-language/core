@@ -1,0 +1,31 @@
+{
+  "format": 1,
+  "version": "0-uncalibrated",
+  "language": "ja",
+  "maxChars": 200000,
+  "tokenizerChunkChars": 10000,
+  "unknownDifficulty": 1,
+  "excludedPartsOfSpeech": ["助詞", "助動詞", "補助記号", "空白", "記号"],
+  "sentence": { "easyLength": 6, "hardLength": 40 },
+  "speechRate": { "easy": 250, "hard": 500 },
+  "weights": {
+    "written": {
+      "vocabulary": 4,
+      "kanji": 3,
+      "sentenceLength": 2,
+      "dialogue": 1,
+      "speechRate": 0
+    },
+    "spoken": {
+      "vocabulary": 4,
+      "kanji": 0,
+      "sentenceLength": 2,
+      "dialogue": 0,
+      "speechRate": 2
+    }
+  },
+  "thresholds": {
+    "written": [0.2, 0.4, 0.6, 0.8],
+    "spoken": [0.2, 0.4, 0.6, 0.8]
+  }
+}

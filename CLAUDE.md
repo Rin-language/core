@@ -70,7 +70,7 @@ Only work on the slice I name. Anything outside the current slice is out of scop
   - dev: `pnpm dev` (server), `pnpm --filter @rin-language/core-web dev` (client)
   - test: `pnpm test`; lint: `pnpm lint`; typecheck: `pnpm typecheck` (server and web)
   - tests with the network cut (Linux, sudo): `scripts/run-tests-offline.sh pnpm test`; the other CI checks and how to run them: `docs/ci.md`
-  - build: `pnpm --filter @rin-language/core-server build`, `pnpm --filter @rin-language/core-web build`
+  - build: `pnpm --filter @rin-language/core-server build`, `pnpm --filter @rin-language/core-web build`, `pnpm --filter @rin-language/text-scoring build`
   - run in Docker: `docker compose up -d --build`
 
 ## Session notes for the other repos
