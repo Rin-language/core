@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createSudachiTokenizer } from "../src/sudachi/index.js";
+import { createSudachiTokenizer } from "../src/japanese/sudachi/index.js";
 
 const dictionaryPath = process.env.SUDACHI_DICT_PATH;
 const isNativeModuleInstalled = (): boolean => {

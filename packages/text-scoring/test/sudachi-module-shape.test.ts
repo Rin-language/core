@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { isSudachiModule, toTokens } from "../src/sudachi/module-shape.js";
+import {
+  isSudachiModule,
+  toTokens,
+} from "../src/japanese/sudachi/module-shape.js";
 
 const valid = { Tokenizer: class {}, SplitMode: { a: () => 0 } };
 

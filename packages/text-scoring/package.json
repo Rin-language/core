@@ -9,8 +9,8 @@
       "default": "./dist/index.js"
     },
     "./sudachi": {
-      "types": "./dist/sudachi/index.d.ts",
-      "default": "./dist/sudachi/index.js"
+      "types": "./dist/japanese/sudachi/index.d.ts",
+      "default": "./dist/japanese/sudachi/index.js"
     }
   },
   "files": [

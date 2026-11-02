@@ -1,4 +1,4 @@
-import type { Token } from "../types.js";
+import type { Token } from "../../types.js";
 
 export interface SudachiMorpheme {
   readonly surface: string;

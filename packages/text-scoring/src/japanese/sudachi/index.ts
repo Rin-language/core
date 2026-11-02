@@ -1,6 +1,6 @@
 import { closeSync, openSync, readSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import type { Token, Tokenizer } from "../types.js";
+import type { Token, Tokenizer } from "../../types.js";
 import {
   isSudachiModule,
   type SudachiModule,
