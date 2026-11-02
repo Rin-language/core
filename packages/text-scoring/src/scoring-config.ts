@@ -82,7 +82,7 @@ const isStrictlyAscendingInsideUnit = (values: readonly number[]): boolean =>
     (value, index) =>
       value > 0 &&
       value < 1 &&
-      (index === 0 || value > (values[index - 1] ?? 0)),
+      (index === 0 || value > (values[index - 1] ?? Number.NEGATIVE_INFINITY)),
   );
 
 function findThresholdProblems(

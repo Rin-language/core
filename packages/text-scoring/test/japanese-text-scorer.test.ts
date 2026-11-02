@@ -380,3 +380,9 @@ describe("hardening", () => {
     ).toBeCloseTo(0.57, 10);
   });
 });
+
+describe("speech rate boundary", () => {
+  it("accepts a speech rate of zero", () => {
+    expect(score(EASY, "spoken", 0).subScores.speechRate).toBe(0);
+  });
+});

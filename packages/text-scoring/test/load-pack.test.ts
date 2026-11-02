@@ -155,3 +155,22 @@ describe("loadFrequencyPack on special files and bad limits", () => {
     ).toBeUndefined();
   });
 });
+
+describe("loadFrequencyPack error classes", () => {
+  it("reports a path under a file as not readable, not as missing", () => {
+    expect(
+      problemsOf(() => loadFrequencyPack(`${fixturePath("written")}/child`)),
+    ).toEqual(["file not readable"]);
+  });
+
+  it("refuses bytes that are not valid UTF-8, even inside a string", () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pack-")), "bad.json");
+    writeFileSync(
+      path,
+      Buffer.from([0x7b, 0x22, 0x61, 0x22, 0x3a, 0x22, 0xff, 0x22, 0x7d]),
+    );
+    expect(problemsOf(() => loadFrequencyPack(path))).toEqual([
+      "not valid JSON",
+    ]);
+  });
+});
