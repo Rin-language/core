@@ -22,16 +22,17 @@ export function meanOrZero(values: readonly number[]): number {
 }
 
 /** Weighted mean over the weights above 0; a null with such a weight is a bug. */
-export function combineScores(
-  subScores: Readonly<Record<string, number | null>>,
-  weights: Readonly<Record<string, number>>,
+export function combineScores<Name extends string>(
+  subScores: Readonly<Record<Name, number | null>>,
+  weights: Readonly<Record<Name, number>>,
 ): number {
   let weighted = 0;
   let total = 0;
-  for (const [name, weight] of Object.entries(weights)) {
+  for (const name of Object.keys(weights) as Name[]) {
+    const weight = weights[name];
     if (weight <= 0) continue;
     const subScore = subScores[name];
-    if (subScore === null || subScore === undefined) {
+    if (subScore === null) {
       throw new Error(`sub-score "${name}" has a weight but no value`);
     }
     weighted += weight * subScore;

@@ -12,6 +12,10 @@ export {
 } from "./errors.js";
 export { type FrequencyPack, parseFrequencyPack } from "./frequency-pack.js";
 export {
+  createJapaneseTextScorer,
+  type JapaneseTextScorerOptions,
+} from "./japanese/japanese-text-scorer.js";
+export {
   type LoadPackOptions,
   loadFrequencyPack,
   loadScoringConfig,
